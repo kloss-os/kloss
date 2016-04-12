@@ -1,0 +1,5 @@
+/meta/projektförslag/*.out
+/meta/projektförslag/*.aux
+/meta/projektförslag/*.fdb_latexmk
+/meta/projektförslag/*.log
+/meta/projektförslag/*.pdf
