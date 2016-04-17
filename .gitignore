@@ -4,3 +4,4 @@
 /meta/projektförslag/*.log
 /meta/projektförslag/*.pdf
 /meta/projektförslag/*.fls
+/build/*
