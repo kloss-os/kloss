@@ -5,3 +5,5 @@
 /meta/projektförslag/*.pdf
 /meta/projektförslag/*.fls
 /build/*
+/Cargo.lock
+/target/*

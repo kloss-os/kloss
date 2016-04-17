@@ -1,0 +1,12 @@
+[package]
+name = "banjos"
+version = "0.1.0"
+authors = ["Albin Stjerna <alst4459@student.uu.se>",
+           "Daniel Ahlbom", "Fredrik Svensson",
+           "Simon Lövgren"]
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+rlibc = "0.1.4"
