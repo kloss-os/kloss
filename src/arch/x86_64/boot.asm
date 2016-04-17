@@ -2,6 +2,7 @@
 ;;; http://os.phil-opp.com/entering-longmode.html
 
 global start
+extern long_mode_start
 
 section .text
 bits 32
@@ -17,6 +18,17 @@ start:
         call set_up_page_tables
         call enable_paging
 
+        ;; load the 64-bit GDT
+        lgdt [gdt64.pointer]
+
+        ;; This reloads the new 64-bit GDT selector registers
+        mov ax, 16
+        mov ss, ax  ; stack selector
+        mov ds, ax  ; data selector
+        mov es, ax  ; extra selector
+
+        ;; Load the new cs with a far jump
+        jmp gdt64.code:long_mode_start
 
         ;; print `OK` to screen
         mov dword [0xb8000], 0x2f4b2f4f
@@ -162,3 +174,19 @@ p2_table:
 stack_bottom:
     resb 64
 stack_top:
+
+
+
+;;; This is the global descriptor table. We need to set it up to be in
+;;; real long mode. Basically, it's yet another piece of weird assembler
+;;; bullshit magic.
+section .rodata
+gdt64:
+        dq 0 ; zero entry
+.code: equ $ - gdt64
+        dq (1<<44) | (1<<47) | (1<<41) | (1<<43) | (1<<53) ; code segment
+.data: equ $ - gdt64
+        dq (1<<44) | (1<<47) | (1<<41) ; data segment
+.pointer:
+        dw $ - gdt64 - 1
+        dq gdt64
