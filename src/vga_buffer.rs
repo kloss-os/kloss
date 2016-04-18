@@ -1,7 +1,15 @@
+/// This module is an interface to the IBM standard VGA Buffer.
+
 use core::ptr::Unique;
 use core::fmt::Write;
 use spin::Mutex;
 
+/// Proportions of the buffers.
+const BUFFER_HEIGHT: usize = 25;
+const BUFFER_WIDTH: usize = 80;
+
+/// An enum represented as an 8-bit integer mapping the various VGA BIOS
+/// colours.
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum Color {
@@ -38,9 +46,6 @@ struct ScreenChar {
     ascii_character: u8,
     color_code: ColorCode,
 }
-
-const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize = 80;
 
 struct Buffer {
     chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
