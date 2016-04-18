@@ -14,6 +14,10 @@ Du behöver:
 - QEMU för x86_64
 - [multirust](https://github.com/brson/multirust)
 - NASM
+- grub och grub-mkrescue
+- xorriso
+
+På Ubuntu (LTS) motsvarar det följande: `sudo apt-get install quemu xorriso grub-mkrescue nasm`.
 
 Gör så här:
 1. Installera senaste nightlyn av Rust m.h.a. multirust: `multirust override nightly`.
