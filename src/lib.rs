@@ -1,3 +1,4 @@
+// This is the main kernel file. I don't know why it's called lib. :(
 #![feature(lang_items)]
 #![no_std]
 
@@ -16,15 +17,21 @@ mod memory;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
+///
+/// Note how the multiboot data is passed in from a raw pointer (usize),
+/// via the assembler parts.
 #[no_mangle]
 pub extern fn rust_main(multiboot_information_address: usize) {
+
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
 
+    // Parse the boot info data from the Multiboot header
     let boot_info = unsafe{ multiboot2::load(multiboot_information_address) };
     let memory_map_tag = boot_info.memory_map_tag()
         .expect("Memory map tag required");
 
+    // Dump memory areas to screen.
     println!("Memory areas:");
     for area in memory_map_tag.memory_areas() {
         println!("    start: 0x{:x}, length 0x{:x}",
@@ -32,15 +39,20 @@ pub extern fn rust_main(multiboot_information_address: usize) {
                 area.length);
     }
 
+    // Load the elf-sections tags from the (now parsed) Multiboot header
     let elf_sections_tag = boot_info.elf_sections_tag()
         .expect("Elf-sections tag required");
 
+    // ...and print them to screen.
     println!("Kernel sections:");
     for section in elf_sections_tag.sections() {
         println!("    addr: 0x{:x}, size 0x{:x}, flags: 0x:{:x}",
                  section.addr, section.size, section.flags);
     }
 
+    // Calculate the start and end addresses of the actual kernel data in RAM.
+    // This will be useful for kernel relocation (and memory allocation).
+    // Note how we are using map() and anonymous functions _in kernel space_.
     let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
         .min().unwrap();
     let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
@@ -55,10 +67,12 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("Multiboot start: 0x{:x}, multiboot end: 0x{:x}",
              multiboot_start, multiboot_end);
 
+    // Set up a frame allocator.
     let mut frame_allocator = memory::AreaFrameAllocator::new(
         kernel_start as usize, kernel_end as usize, multiboot_start,
         multiboot_end, memory_map_tag.memory_areas());
 
+    // Try allocating _all available frames_.
     for i in 0.. {
         use memory::FrameAllocator;
         if let None = frame_allocator.allocate_frame() {

@@ -4,7 +4,7 @@ use core::ptr::Unique;
 use core::fmt::Write;
 use spin::Mutex;
 
-/// Proportions of the buffers.
+// Proportions of the buffers.
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
@@ -31,15 +31,21 @@ pub enum Color {
     White      = 15,
 }
 
+/// Funny object: A `ColorCode` is just an 8-bit int.
 #[derive(Clone, Copy)]
 struct ColorCode(u8);
 
+/// ...but notice how we are only implementing this library function for
+/// `ColorCodes`, not u8 in general!
 impl ColorCode {
     const fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
 
+/// Every character has a colour and an ascii character.
+/// FIXME: We should really replace this with something
+/// Unicode-compliant.
 #[derive(Clone, Copy)]
 #[repr(C)]
 struct ScreenChar {
@@ -58,6 +64,9 @@ pub struct Writer {
 }
 
 impl Writer {
+
+    /// Write a given byte to the screen.
+    /// Warning! Will only work with single bytes!
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -78,10 +87,21 @@ impl Writer {
         }
     }
 
+    /// Write an entire string to screen, possibly clipping it if it
+    /// turns out to be too long. Should not contain Unicode characters.
+    pub fn write_str(&mut self, s: &str) {
+        for byte in s.bytes() {
+            self.write_byte(byte)
+        }
+    }
+
+    /// Internal helper function. Get a mutable reference to the
+    /// buffer. That `unsafe` block is sort of worrying.
     fn buffer(&mut self) -> &mut Buffer {
         unsafe{ self.buffer.get_mut() }
     }
 
+    /// Print a simple newline.
     fn new_line(&mut self) {
         for row in 0..(BUFFER_HEIGHT-1) {
             let buffer = self.buffer();
@@ -91,6 +111,7 @@ impl Writer {
         self.column_position = 0;
     }
 
+    /// Write an entire row of spaces, followed by a newline.
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
@@ -100,14 +121,10 @@ impl Writer {
         self.buffer().chars[row] = [blank; BUFFER_WIDTH];
 
     }
-
-    pub fn write_str(&mut self, s: &str) {
-        for byte in s.bytes() {
-            self.write_byte(byte)
-        }
-    }
 }
 
+/// Make our Writer implement the Writer trait. It just writes a given
+/// set of bytes and returns Ok(()).
 impl ::core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> ::core::fmt::Result {
         for byte in s.bytes() {
@@ -117,12 +134,17 @@ impl ::core::fmt::Write for Writer {
     }
 }
 
+/// This looks kind of scary, but I think what it amounts to is a
+/// spin-locked global static internal writer object, meaning that
+/// anyone calling any of the writer macros below will automatically use
+/// *this* writer, which is universally spin-locked for mutual exclusion.
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
     column_position: 0,
     color_code: ColorCode::new(Color::White, Color::LightGray),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
 
+/// Implement the formatted println macro.
 macro_rules! println {
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
@@ -135,6 +157,8 @@ macro_rules! print {
     });
 }
 
+/// Helper function: clear the screen by printing `BUFFER_HEIGHT` number
+/// of newlines.
 pub fn clear_screen() {
     for _ in 0..BUFFER_HEIGHT {
         println!("");
