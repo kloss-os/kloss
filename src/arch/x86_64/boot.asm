@@ -9,6 +9,7 @@ bits 32
 start:
 
         mov esp, stack_top
+        mov edi, ebx            ; Move the multiboot pointer to edi
 
         ;; Now we have enough stack for a few calls.
         call check_multiboot
@@ -196,7 +197,7 @@ p3_table:
 p2_table:
     resb 4096
 stack_bottom:
-    resb 64
+    resb 4096
 stack_top:
 
 
