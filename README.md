@@ -1,4 +1,4 @@
-# WORKING TITLE
+# BanjOS
 
 OSPP (1DT096) 2016 - Grupp 01
 
