@@ -86,8 +86,14 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     loop{}
 }
 
-#[lang = "eh_personality"] extern fn eh_personality() {}
+/// This is an override for a language feature. Don't know what it does.
+#[lang = "eh_personality"]
+extern fn eh_personality() {}
 
+/// This is an override for the Rust panic handler, and it runs when
+/// something crashes. This version displays PANIC and a description of
+/// where the panic occurred.  Try invoking the panic!(); macro to see
+/// it in action.
 #[lang = "panic_fmt"]
 extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     println!("\n\nPANIC in {} at line {}:", file, line);
