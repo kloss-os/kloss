@@ -1,0 +1,16 @@
+[package]
+name = "banjos"
+version = "0.1.0"
+authors = ["Albin Stjerna <alst4459@student.uu.se>",
+           "Daniel Ahlbom", "Fredrik Svensson",
+           "Simon Lövgren"]
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+rlibc = "0.1.4"
+spin = "0.3.4"
+
+[dependencies.multiboot2]
+git = "https://github.com/phil-opp/multiboot2-elf64"
