@@ -101,3 +101,9 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 
     loop{}
 }
+
+pub extern fn rust_interrupt_handler() {
+
+    println!("Handled an interrupt!");
+    loop{}
+}
