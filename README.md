@@ -24,6 +24,8 @@ Gör så här:
 2. `make run` bygger en bootbar ISO med kärnan och kör den i QEMU
 
 ## Testa
+![Pooh Assembly]
+(blob:https%3A//drive.google.com/02dd3d6c-342e-44d3-9941-15fa341608d8)
 
 ## Starta systemet
 
