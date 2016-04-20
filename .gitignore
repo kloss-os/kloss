@@ -1,9 +1,9 @@
-/meta/projektförslag/*.out
-/meta/projektförslag/*.aux
-/meta/projektförslag/*.fdb_latexmk
-/meta/projektförslag/*.log
-/meta/projektförslag/*.pdf
-/meta/projektförslag/*.fls
+/meta/**/*.out
+/meta/**/*.aux
+/meta/**/*.fdb_latexmk
+/meta/**/*.log
+/meta/**/*.pdf
+/meta/**/*.fls
 
 /build/*
 /Cargo.lock
