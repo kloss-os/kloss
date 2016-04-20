@@ -25,7 +25,7 @@ Gör så här:
 
 ## Testa
 ![Pooh Assembly]
-(blob:https%3A//drive.google.com/02dd3d6c-342e-44d3-9941-15fa341608d8)
+(meta/images/pooh_assembly.png)
 
 ## Starta systemet
 
