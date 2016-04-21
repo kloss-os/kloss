@@ -40,3 +40,8 @@ cargo:
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
 	mkdir -p $(shell dirname $@)
 	nasm -felf64 $< -o $@
+
+
+# generate internal documentation
+dev_doc:
+	cargo rustdoc -- --no-defaults --passes strip-hidden --passes collapse-docs --passes unindent-comments --passes strip-priv-imports
