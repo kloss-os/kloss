@@ -6,19 +6,27 @@ use multiboot2::{MemoryAreaIter, MemoryArea};
 /// frames linearly.
 /// FIXME: There is currently *no way* to deallocate a frame!
 pub struct AreaFrameAllocator {
+    /// Incrementing index, every number beneath this is used
     next_free_frame: Frame,
+    /// Contains the memory area of next_free_frame
     current_area: Option<&'static MemoryArea>,
+    /// Iterator containing unused memory
     areas: MemoryAreaIter,
+
+    /// Index of first kernel memory area
     kernel_start: Frame,
+    /// Index of last kernel memory area
     kernel_end: Frame,
+    /// Index of first multiboot memory area
     multiboot_start: Frame,
+    /// Index of last multiboot memory area
     multiboot_end: Frame,
 }
 
 /// This is the method part of the "object".
 impl AreaFrameAllocator {
 
-    /// Constrcutor function. Note how it is the only public function!
+    /// Constructor function. Note how it is the only public function!
     pub fn new(kernel_start: usize, kernel_end: usize,
                multiboot_start: usize, multiboot_end: usize,
                memory_areas: MemoryAreaIter) -> AreaFrameAllocator
