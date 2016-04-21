@@ -1,4 +1,4 @@
-// This is the main kernel file. I don't know why it's called lib. :(
+// This is the main kernel file.
 #![feature(lang_items)]
 #![no_std]
 
