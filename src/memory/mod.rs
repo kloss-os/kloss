@@ -9,14 +9,13 @@ mod area_frame_allocator;
 /// The standard Page/Frame size
 pub const PAGE_SIZE: usize = 4096;
 
-/// The Frame is represented by its number.
+/// The `Frame` is represented by its `number`.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Frame {
     number: usize,
 }
 
 impl Frame {
-
     /// Generate a Frame from a given (pointer) address
     fn containing_address(address: usize) -> Frame {
         Frame{ number: address / PAGE_SIZE }
