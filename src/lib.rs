@@ -15,6 +15,8 @@ mod vga_buffer;
 
 mod memory;
 
+mod idt;
+
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
@@ -81,7 +83,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         }
     }
 
-
+    println!("Loading the IDT!");
+    unsafe{idt::idt_load(0);}
 
     loop{}
 }
