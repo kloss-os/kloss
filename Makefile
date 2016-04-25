@@ -98,7 +98,7 @@ build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
 
 # TESTS & DEBUG
 debug: $(iso)
-	@qemu-system-x86_64 -cdrom $(iso) -s -S
+	@qemu-system-x86_64 -cdrom $(iso) -s -S -monitor stdio
 
 gdb:
 	@rust-os-gdb/bin/rust-gdb $(kernel) -ex "target remote :1234"
