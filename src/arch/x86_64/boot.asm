@@ -24,6 +24,9 @@ start:
         ;; load the 64-bit GDT
         lgdt [gdt64.pointer]
 
+        ;; load the IDT
+        lidt [idt.pointer]
+
         ;; This reloads the new 64-bit GDT selector registers
         mov ax, 16
         mov ss, ax  ; stack selector
@@ -192,13 +195,6 @@ set_up_SSE:
 section .bss
 align 4096
 
-idt:
-    resb 4096
-.pointer:
-        ;; This is data for LIDT
-        dw $ - idt - 1          ; Limit (16 bits)
-        dq idt                  ; Address (64 bits)
-
 p4_table:
     resb 4096
 p3_table:
@@ -208,8 +204,6 @@ p2_table:
 stack_bottom:
     resb 4096
 stack_top:
-
-
 
 ;;; This is the global descriptor table. We need to set it up to be in
 ;;; real long mode. Basically, it's yet another piece of weird assembler
@@ -224,3 +218,11 @@ gdt64:
 .pointer:
         dw $ - gdt64 - 1
         dq gdt64
+
+section .data
+idt:
+    resb 4096
+.pointer:
+        ;; This is data for LIDT
+        dw $ - idt - 1          ; Limit (16 bits -- length of the IDT)
+        dq idt                  ; Address (64 bits)

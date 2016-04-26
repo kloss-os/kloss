@@ -11,8 +11,6 @@ section .text
 bits 64
 long_mode_start:
 
-        ;; Set up interrupt table:
-        lidt [idt]
 
         ;; Call Rust main
         call rust_main
