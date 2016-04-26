@@ -74,6 +74,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     let mut frame_allocator = memory::AreaFrameAllocator::new(
         kernel_start as usize, kernel_end as usize, multiboot_start,
         multiboot_end, memory_map_tag.memory_areas());
+    
+    memory::test_paging(&mut frame_allocator);
 
     // Try allocating _all available frames_.
     for i in 0.. {

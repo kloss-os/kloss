@@ -2,6 +2,7 @@
 
 use memory::paging::entry::*;
 use memory::paging::ENTRY_COUNT;
+use memory::FrameAllocator;
 use core::ops::{Index, IndexMut};
 use core::marker::PhantomData;
 
@@ -46,6 +47,23 @@ impl<L> Table<L> where L: HierarchicalLevel
         self.next_table_address(index)
             .map(|address| unsafe { &mut *(address as *mut _)})
     }
+    /// 
+    pub fn next_table_create<A>(&mut self,
+                                index: usize,
+                                allocator: &mut A)
+                                -> &mut Table<L::NextLevel>
+        where A: FrameAllocator
+    {
+        if self.next_table(index).is_none() {
+            assert!(!self.entries[index].flags().contains(HUGE_PAGE),
+                   "mapping code does not support huge pages");
+            let frame = allocator.allocate_frame().expect("no frames available");
+            self.entries[index].set(frame, PRESENT | WRITABLE);
+            self.next_table_mut(index).unwrap().zero();
+        }   
+        self.next_table_mut(index).unwrap()
+    }
+
 }
 
 /// Lets us get the entry for some_table[42]
