@@ -87,7 +87,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("Loading the IDT!");
     // unsafe{idt::idt_load();}
     unsafe{
-        idt::idt_get_ptr();
+        idt::idt_set_gate(42, rust_interrupt_handler, 17, 2);
     }
 
     loop{}
@@ -109,8 +109,8 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-pub extern fn rust_interrupt_handler(int_nr: usize) {
+pub extern fn rust_interrupt_handler() {
 
-    println!("Handled an interrupt with no {}!", int_nr);
+    println!("Handled an interrupt!");
     loop{}
 }

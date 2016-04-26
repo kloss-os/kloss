@@ -22,34 +22,49 @@ extern {
 /// IDT. Otherwise, all bets are off.
 pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
 
+    // This represents (or rather: will represent) the IDTR
+    // special-purpose register, holding the base address and limit (max
+    // length) of the IDT.
+    // Note the stupid but unlikely default values!
+    let mut idtr = IdtPointer{base: 17, limit: 17};
 
-    let mut idtr_contents = IdtPointer{base: 17, limit: 17};
-
+    // ASM Magic: Store the IDT address + limit at the memory pointed to
+    // by the contents of EAX
     asm!("sidt [eax]"
-         : // return nothing -- write directly to memory
-         : "{eax}"(&mut idtr_contents as *mut IdtPointer)
-         : "{eax}"
-         : "intel");
+         : // return nothing -- write directly to the IdtPointer struct!
+         : "{eax}"(&mut idtr as *mut IdtPointer)
+         : "{eax}" // don't clobber EAX
+         : "intel" // use Intel syntax
+    );
 
-    println!("IDTR limit is: 0x{:x}", idtr_contents.limit);
-    println!("IDTR base is: 0x{:x}", idtr_contents.base);
+    println!("IDTR limit is: 0x{:x}", idtr.limit);
+    println!("IDTR base is: 0x{:x}", idtr.base);
 
-    // This is in no way scary.
-    return idtr_contents.base as *mut [IdtEntry; 256];
+    if idtr.limit < 1 {
+        // The IDT must have at least one entry!
+
+        panic!("Expected the IDT to be longer!");
+    }
+
+    // This is in no way scary. It's type-casting a random blob of
+    // memory to a mutable (pointer to an) array of a known size!
+    return idtr.base as *mut [IdtEntry; 256];
 }
 
 
-const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
-                                           selector: 0,
-                                           reserved_zero: 0,
-                                           flags: 0,
-                                           base_high: 0,
-                                           reserved_ist: 0,
-                                           base_mid: 0};
+// const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
+//                                            selector: 0,
+//                                            reserved_zero: 0,
+//                                            flags: 0,
+//                                            base_high: 0,
+//                                            reserved_ist: 0,
+//                                            base_mid: 0};
 
 // Declare a static IDT.
 #[no_mangle]
-static mut idt: [IdtEntry; 256] = [NULL_IDT_ENTRY; 256];
+//static mut idt: [IdtEntry; 256] = idt_get_ptr();
+
+//    [NULL_IDT_ENTRY; 256];
 
 // /// Load a new Interrupt Descriptor Table into the CPU.
 // ///
@@ -66,11 +81,13 @@ static mut idt: [IdtEntry; 256] = [NULL_IDT_ENTRY; 256];
 /// Set interrupt handler for `num` to run function `f` using selector
 /// `selector` and flags `flags`.
 #[no_mangle]
-unsafe fn idt_set_gate(num: u8, f: extern "C" fn(), selector: u16, flags: u8)
+pub unsafe fn idt_set_gate(num: u8, f: extern "C" fn(), selector: u16, flags: u8)
 {
 
-    // typecast the pointer to an int
-    let base = f as u64;
+    // typecast the function pointer to an int
+    let service_routine_base = f as u64;
+
+    let idt = (&idt_get_ptr());
 
     // Reserved sections: set them to 0
     //idt[num].reserved_zero = 0;
