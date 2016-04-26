@@ -23,7 +23,7 @@ extern {
 pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
 
 
-    let mut idtr_contents = IdtPointer{base: 0, limit: 0};
+    let mut idtr_contents = IdtPointer{base: 17, limit: 17};
 
     asm!("sidt [eax]"
          : // return nothing -- write directly to memory
