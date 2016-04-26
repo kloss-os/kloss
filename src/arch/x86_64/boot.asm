@@ -194,6 +194,10 @@ align 4096
 
 idt:
     resb 4096
+.pointer:
+        ;; This is data for LIDT
+        dw $ - idt - 1          ; Limit (16 bits)
+        dq idt                  ; Address (64 bits)
 
 p4_table:
     resb 4096
