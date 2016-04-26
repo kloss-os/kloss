@@ -52,19 +52,17 @@ pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
 }
 
 
-// const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
-//                                            selector: 0,
-//                                            reserved_zero: 0,
-//                                            flags: 0,
-//                                            base_high: 0,
-//                                            reserved_ist: 0,
-//                                            base_mid: 0};
+const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
+                                           selector: 0,
+                                           reserved_zero: 0,
+                                           flags: 0,
+                                           base_high: 0,
+                                           reserved_ist: 0,
+                                           base_mid: 0};
 
 // Declare a static IDT.
 #[no_mangle]
-//static mut idt: [IdtEntry; 256] = idt_get_ptr();
-
-//    [NULL_IDT_ENTRY; 256];
+static mut idt: [IdtEntry; 256] = [NULL_IDT_ENTRY; 256];
 
 // /// Load a new Interrupt Descriptor Table into the CPU.
 // ///
@@ -87,7 +85,7 @@ pub unsafe fn idt_set_gate(num: u8, f: extern "C" fn(), selector: u16, flags: u8
     // typecast the function pointer to an int
     let service_routine_base = f as u64;
 
-    let idt = (&idt_get_ptr());
+    //let idt = idt_get_ptr();
 
     // Reserved sections: set them to 0
     //idt[num].reserved_zero = 0;
@@ -124,4 +122,18 @@ pub struct IdtEntry {
     base_mid: u16,
     base_high: u32,
     reserved_zero: u32,
+}
+
+pub unsafe fn idt_install() {
+    let idt_limit = ((super::core::mem::size_of::<IdtEntry>() * 256) - 1);
+
+    let idt_base = (&idt as *const [IdtEntry; 256]);
+
+    let new_idtr = IdtPointer{base: idt_base as u64,
+                              limit: idt_limit as u16};
+
+    //asm!("lidt ($0)" :: "r" (new_idtr));
+    //asm!("sti");
+
+
 }
