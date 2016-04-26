@@ -23,20 +23,19 @@ extern {
 pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
 
 
-    let idtr_contents: u64;
+    let mut idtr_contents = IdtPointer{base: 0, limit: 0};
+
     asm!("sidt [eax]"
-         : "={eax}"(idtr_contents)
-         :
-         :"{eax}"
-         :"intel");
+         : // return nothing -- write directly to memory
+         : "{eax}"(&mut idtr_contents as *mut IdtPointer)
+         : "{eax}"
+         : "intel");
 
-    //let idt_ptr = idtr_contents as IdtPointer;
-
-    println!("IDTR limit is: 0x{:x}", idtr_contents);
-    println!("IDTR base is: {}", idtr_contents);
+    println!("IDTR limit is: 0x{:x}", idtr_contents.limit);
+    println!("IDTR base is: 0x{:x}", idtr_contents.base);
 
     // This is in no way scary.
-    return idtr_contents as *mut [IdtEntry; 256];
+    return idtr_contents.base as *mut [IdtEntry; 256];
 }
 
 
