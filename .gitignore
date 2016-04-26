@@ -11,3 +11,6 @@
 
 # EMACS Files
 *~
+
+# Custom GDB
+rust-os-gdb
