@@ -73,7 +73,7 @@ clean:
 	rm -rf target
 
 run: $(iso)
-	qemu-system-x86_64 -cdrom $(iso) -s
+	qemu-system-x86_64 -cdrom $(iso) -s -d int -no-reboot
 
 iso: $(iso)
 
