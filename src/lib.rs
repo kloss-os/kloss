@@ -4,6 +4,7 @@
 
 #![feature(const_fn)]
 #![feature(unique)]
+#![feature(asm)]
 
 extern crate rlibc;
 extern crate spin;
@@ -84,7 +85,10 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     }
 
     println!("Loading the IDT!");
-    unsafe{idt::idt_load(0);}
+    // unsafe{idt::idt_load();}
+    unsafe{
+        idt::idt_get_ptr();
+    }
 
     loop{}
 }
@@ -105,8 +109,8 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-pub extern fn rust_interrupt_handler() {
+pub extern fn rust_interrupt_handler(int_nr: usize) {
 
-    println!("Handled an interrupt!");
+    println!("Handled an interrupt with no {}!", int_nr);
     loop{}
 }

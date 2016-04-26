@@ -2,6 +2,7 @@
 ;;; http://os.phil-opp.com/entering-longmode.html
 
 global start
+global idt
 extern long_mode_start
 
 section .text
@@ -190,6 +191,10 @@ set_up_SSE:
 ;;; Reserve some space for a (very minimal) stack.
 section .bss
 align 4096
+
+idt:
+    resb 4096
+
 p4_table:
     resb 4096
 p3_table:
