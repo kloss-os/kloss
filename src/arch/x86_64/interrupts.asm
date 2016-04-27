@@ -8,7 +8,8 @@ bits 64
 
 general_interrupt_handler:
 
-        ;; FIXME: disable interrupts
+        ;; disable interrupts
+        cli
 
         push rax
         push rcx
