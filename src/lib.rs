@@ -98,7 +98,6 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
         idt::idt_set_gate(42, general_interrupt_handler,
                           idt::SELECT_TARGET_PRIV_1, flags);
-        idt::idt_get_ptr();
 
         // Test out interrupts
         asm!("int 42" ::::"intel");
