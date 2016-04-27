@@ -10,6 +10,11 @@ extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
 
+
+extern {
+    fn general_interrupt_handler();
+}
+
 #[macro_use]
 #[doc(inline)]
 mod vga_buffer;
@@ -91,7 +96,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
                     | idt::FLAG_DPL_KERNEL_MODE
                     | idt::FLAG_GATE_ENABLED;
 
-        idt::idt_set_gate(42, rust_interrupt_handler,
+        idt::idt_set_gate(42, general_interrupt_handler,
                           idt::SELECT_TARGET_PRIV_1, flags);
         idt::idt_get_ptr();
 
@@ -118,7 +123,8 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
+#[no_mangle]
 pub extern fn rust_interrupt_handler(int_no: u8) {
 
-    println!("Handled an interrupt!");
+    println!("Handled interrupt {}!", int_no);
 }

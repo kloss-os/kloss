@@ -1,11 +1,13 @@
 ;;; This file contains interrupt handlers.
 
 extern rust_interrupt_handler
+global general_interrupt_handler
 
 section .text
 bits 64
 
-keyboard_interrupt_handler:
+general_interrupt_handler:
+
         push rax
         push rcx
         push rdx
@@ -20,6 +22,8 @@ keyboard_interrupt_handler:
         ;; Note: this is SLOW
         fxsave [saved_floats]
 
+        ;; set up argument and call handler
+        mov rdi, 17
         call rust_interrupt_handler
 
         ;; Restore floating-point registers

@@ -117,7 +117,7 @@ static mut idt: [IdtEntry; IDT_NUM_ENTRIES] =
 /// `selector` and flags `flags`.
 #[no_mangle]
 pub unsafe fn idt_set_gate(num: usize,
-                           f: extern "C" fn(int_nr: u8),
+                           f: unsafe extern "C" fn(),
                            selector: u16, flags: u8)
 {
 
