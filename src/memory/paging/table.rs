@@ -25,9 +25,9 @@ impl<L> Table<L> where L: TableLevel
         }
     }
 }
-
-impl<L> Table<L> where L: HierarchicalLevel 
-{
+/// 
+impl<L> Table<L> where L: HierarchicalLevel {
+    /// Gives the address in the page one level down in the hierarchy. Only usable for p4, P3 and P2.
     fn next_table_address(&self, index: usize) -> Option<usize> {
         let entry_flags = self[index].flags();
         if entry_flags.contains(PRESENT) && !entry_flags.contains(HUGE_PAGE) {
@@ -47,13 +47,15 @@ impl<L> Table<L> where L: HierarchicalLevel
         self.next_table_address(index)
             .map(|address| unsafe { &mut *(address as *mut _)})
     }
-    /// 
+
+    /// Creates a table and sets flags to Present and Writable, if flagged ass HUGE_PAGE error will occure since they are not supported for this kind of pageing.
     pub fn next_table_create<A>(&mut self,
                                 index: usize,
                                 allocator: &mut A)
                                 -> &mut Table<L::NextLevel>
         where A: FrameAllocator
     {
+        /// If next table returns none, an assert checks for HUGE_PAGE flag
         if self.next_table(index).is_none() {
             assert!(!self.entries[index].flags().contains(HUGE_PAGE),
                    "mapping code does not support huge pages");
@@ -95,6 +97,7 @@ impl TableLevel for Level3 {}
 impl TableLevel for Level2 {}
 impl TableLevel for Level1 {}
 
+/// Describes each layer/level of hierarchy in the page table. To differentiate P1 from the rest.
 trait HierarchicalLevel: TableLevel {
     type NextLevel: TableLevel;
 }

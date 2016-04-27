@@ -1,4 +1,6 @@
 pub use self::entry::*;
+
+///FrameAllocator is the method used to create Frames from Pages
 use memory::{PAGE_SIZE, Frame, FrameAllocator}; // needed later
 use self::table::{Table, Level4};
 use core::ptr::Unique;
@@ -23,24 +25,28 @@ impl Page {
             "invalid address: 0x{:x}", address);
         Page { number: address / PAGE_SIZE }
     }
-
+    
+    /// Takes a VirtualAddress and calculates start address 
     fn start_address(&self) -> PhysicalAddress {
         self.number * PAGE_SIZE
     } 
     
-    /// --------
+    /// Calculates the p4-starting index/point
     fn p4_index(&self) -> usize {
         (self.number >> 27) & 0o777
     }
     
+    /// Calculates the p3-starting index/point
     fn p3_index(&self) -> usize {
         (self.number >> 18) & 0o777
     }
 
+    /// Calculates the p2-starting index/point
     fn p2_index(&self) -> usize {
         (self.number >> 9) & 0o777
     }
 
+    /// Calculates the p1-starting index/point
     fn p1_index(&self) -> usize {
         (self.number >> 0) & 0o777
     }
@@ -48,15 +54,20 @@ impl Page {
 
 }
 
+/// A struct to save the first pice of the address. 
 pub struct RecursivePageTable {
     p4: Unique<Table<Level4>>,
 }
 
+
+
+/// In order to find the complete address we implement a way to go through four levels of 
+/// page-tables in order to retrive four pices of the address. 
 impl RecursivePageTable {
     pub unsafe fn new() -> RecursivePageTable {
         RecursivePageTable { p4: Unique::new(table::P4) }
     }
-
+    
     fn p4(&self) -> &Table<Level4>{
         unsafe { self.p4.get() }
     }
@@ -66,16 +77,16 @@ impl RecursivePageTable {
     }
 
 
-/// Translates a Virtual_Address toa PhysicalAddress
+/// Translates a Virtual_Address to a PhysicalAddress
     pub fn translate(&self, virtual_address: VirtualAddress) -> Option<PhysicalAddress> {
         let offset = virtual_address % PAGE_SIZE;
         self.translate_page(Page::containing_address(virtual_address))
             .map(|frame| frame.number * PAGE_SIZE + offset)
     }
-    
+    /// The page in the next level is saved in P3 and found through .next_table and using the index where P4 was found.
     fn translate_page(&self, page: Page) -> Option<Frame> {
         let  p3 = self.p4().next_table(page.p4_index());
- 
+        /// If page is flagged as HUGE_FRAME, 
         let huge_page = || {
             p3.and_then(|p3| {
                 let p3_entry= &p3[page.p3_index()]; //1GiB page?
@@ -112,6 +123,8 @@ impl RecursivePageTable {
             .or_else(huge_page)
         
     }
+    
+    /// Maps Pages to Tables and checks if correctly created.
     pub fn map_to<A>(&mut self, 
                      page: Page, 
                      frame: Frame, 
@@ -126,6 +139,8 @@ impl RecursivePageTable {
         assert!(p1[page.p1_index()].is_unused());
         p1[page.p1_index()].set(frame, flags | PRESENT);
     }
+    
+    /// Maps a page to a frame with correct flags using the FrameAllocator
     pub fn map<A>(&mut self, 
                   page: Page, 
                   flags: EntryFlags, 
@@ -136,6 +151,7 @@ impl RecursivePageTable {
         self.map_to(page, frame, flags, allocator)
     }
     
+    /// För tillfället en 'bekväm pryl som används senare', inte förklarat ännu
     pub fn identity_map<A>(&mut self, 
                            frame: Frame, 
                            flags: EntryFlags, 
@@ -165,7 +181,7 @@ impl RecursivePageTable {
     }
     
 }
-
+/// Basic tresting of different page table levels and allocations as well as mapping specific bits in specific levels
 pub fn test_paging<A>(allocator: &mut A)
     where A: FrameAllocator
 {
@@ -196,9 +212,3 @@ pub fn test_paging<A>(allocator: &mut A)
     page_table.unmap(Page::containing_address(addr), allocator);
     println!("None = {:?}", page_table.translate(addr));
 }
-
-//   use self::entry::HUGE_PAGE;
-
-//    let p3 = unsafe { &*table::p4 }.next_table(page.p4_index());
-
-
