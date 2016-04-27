@@ -51,12 +51,14 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     let elf_sections_tag = boot_info.elf_sections_tag()
         .expect("Elf-sections tag required");
 
+/*
     // ...and print them to screen.
     println!("Kernel sections:");
     for section in elf_sections_tag.sections() {
         println!("    addr: 0x{:x}, size 0x{:x}, flags: 0x:{:x}",
                  section.addr, section.size, section.flags);
     }
+*/
 
     // Calculate the start and end addresses of the actual kernel data in RAM.
     // This will be useful for kernel relocation (and memory allocation).
@@ -84,7 +86,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     for i in 0.. {
         use memory::FrameAllocator;
         if let None = frame_allocator.allocate_frame() {
-            //println!("Allocated {} frames", i);
+            println!("Allocated {} frames", i);
             break;
         }
     }

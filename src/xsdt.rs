@@ -1,10 +1,7 @@
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 
-use core::cmp::Ordering;
-use core::mem;
-use core::ptr;
 
-
+// A struct representing the descriptor, it has to be packed C-style
 #[repr(C)]
 pub struct RSDPdesc {
     signature:  [u8; 8],
@@ -15,129 +12,138 @@ pub struct RSDPdesc {
 }
 
 
-impl RSDPdesc {
-    pub fn new() -> RSDPdesc {
-        unimplemented!();
-    }
-
-}
-
 /// Find RSD Pointer
 /// #Safety
 /// Read-only from memory addresses
 pub fn find_rsdp() -> usize {
     // Start by getting the ebda start address which is located at 0x40e
+    // The address is a segmented 2-byte pointer
     let ebda_start: usize;
+
+    // Since the address technically is a 20-bit integer, u16 is too small!
     let mut ebda_segment: u32;
     let mut ebda_offset: u32;
+
+    // Get the pointer into one of the variables
     unsafe {
         asm!( "mov rax, [0x40e]"
             : "={rax}"(ebda_offset) :
             : "{rax}"
             : "intel" );
     }
-    ebda_segment = ebda_offset << 0x1;
-    ebda_segment = ebda_segment & 0x000FFFF0;
-    ebda_offset = ebda_offset & 0x00000001;
+    // Place the shifted version to the other
+    ebda_segment = ebda_offset << 0x08;
 
+    // Mask the unneccesary bits
+    ebda_segment = ebda_segment & 0x000FFFF0;
+    ebda_offset  = ebda_offset  & 0x00000001;
+
+    // Now we simply add the two addresses using bitwise OR
     ebda_start = (ebda_segment | ebda_offset) as usize;
 
-
-    // EBDA is max 1 KB  long
+    // EBDA is max 1 KB  long, so we can get the end address
     let ebda_end = ebda_start + 0x400;
 
 
+    // Iterate over possible EBDA area
+    // Note that the identifier is on a 16-byte boundary
     let mut current: usize = ebda_start;
-
-    println!("{:x}", ebda_start);
-    /*
     while current <= ebda_end {
-        if verify_rsdp(current) {
+        if unsafe {verify_rsdp(current)} {
+            // YES FOUND IT WOOOO
             return current;
         } else {
-            current = current + 0x8;
+            // Check next address, 16 bytes ahead!
+            current = current + 0x10;
         }
     }
 
-    println!("RSDP not in EBDA");
 
     // It can also be located somewhere between the following addresses
     let mbos_start: usize = 0x000E0000;
     let mbos_end:   usize = 0x000FFFFF;
     current = mbos_start;
 
+    // Same as above, but in MBOS
     while current <= mbos_end {
-        if verify_rsdp(current) {
+        if unsafe{verify_rsdp(current)} {
             return current;
         } else {
-            current = current + 0x8;
+            current = current + 0x10;
         }
     }
 
-    */
     return 0x0;
 }
 
 
-fn verify_rsdp(rsdp: usize) -> bool {
-    // We need an ASCII string containing "RSD PTR"
+
+unsafe fn verify_rsdp(rsdpp: usize) -> bool {
+    // We need an ASCII string containing "RSD PTR "
     let str: [u8; 8] = [82, 83, 68, 32, 80, 84, 82, 32];
-    let mut cmpa: usize = rsdp;
+    //let str: &[u8; 8] = b"RSD PTR ";
 
+    // THIS IS HOW YOU RECAST SH... stuff
+    // Phil Opp's multiboot2 code uses similar syntax
+    let rsdpd = &*(rsdpp as *const RSDPdesc);
 
-    for char in &str {
-        let cmpc: u8;
-        unsafe {
-            asm!( "mov rax, [rcx]"
-                : "={rax}"(cmpc)
-                : "{rcx}"(cmpa)
-                : "{rax}","{rcx}"
-                : "intel" );
-        }
-
-        if cmpc.cmp(char) != Ordering::Equal {
-            return false;
-        }
-
-
-        cmpa = cmpa + 0x1;
+    // Check identifier string
+    // Got this line, more or less, from
+    // http://stackoverflow.com/questions/23148737/compare-definite-length-arrays
+    if !str.iter().zip(rsdpd.signature.iter()).all(|(a,b)| a == b) {
+        return false;
     }
 
 
-    // TODO: Implement checksum verification
-    let rsdp_desc = gen_rsdp_desc(rsdp);
-    //println!("{:x}",rsdp_desc.checksum);
+    // Let's verify the checksum!
+    // This must be done for every _byte_ in the struct
+    let mut chksum: u32 = 0;
 
-    return true;
-}
-
-
-fn gen_rsdp_desc<'a>(rsdpp: usize) -> &'a *const RSDPdesc {
-    //let mut current: usize = rsdpp;
-
-    //let signature:  *const [u8; 8];
-    //let checksum:   *const u8;
-    //let oemid:      *const [u8; 6];
-    //let revision:   *const u8;
-    //let rsdt_addr:  *const u32;
-    let ref rsdp_desc: *const RSDPdesc;
-
-    unsafe {
-        //rsdp_desc = mem::uninitialized();
-        asm!( "mov rax, [rcx]"
-            : "={rax}"(rsdp_desc)
-            : "{rcx}"(rsdpp)
-            : "{rax}","{rcx}"
-            : "intel" );
+    // Sum signature
+    // Should be constant, and already verified. Could skip this.
+    for i in rsdpd.signature.iter() {
+        chksum = chksum + (*i & 0xFF) as u32;
     }
 
-    //let rsdp_desc = RSDPdesc {
-    //    signature:  *current,
-    //    checksum:   *(current = current + 0x40),
-    //};
+    // Sum checksum
+    chksum = chksum + (rsdpd.checksum & 0xFF) as u32;
 
-    //println!("{:x}", rsdp_desc as *const RSDPdesc);
-    //println!("{:X}", rsdp_desc.checksum);
+    // Sum OEMID
+    for i in rsdpd.oemid.iter() {
+        //println!("OEMID {}", *i as char);
+        chksum = chksum + (*i & 0xFF) as u32;
+    }
 
-    return rsdp_desc;
+    // Sum revision
+    chksum = chksum + (rsdpd.revision & 0xFF) as u32;
+
+    // Sum address, this is ugly since we need to add all four bytes
+    chksum = chksum + ((rsdpd.rsdt_addr >> 0x18) & 0xFF);
+    chksum = chksum + ((rsdpd.rsdt_addr >> 0x10) & 0xFF);
+    chksum = chksum + ((rsdpd.rsdt_addr >> 0x08) & 0xFF);
+    chksum = chksum + (rsdpd.rsdt_addr & 0xFF);
+
+
+    // Mask all bytes above this
+    chksum = chksum & 0xFF;
+
+
+
+    // Debug lines for your pleasure!
+    println!("RSDP checksum 0x{:x}", rsdpd.checksum);
+    println!("ACPI version {}", rsdpd.revision);
+    println!("RSDT address 0x{:x}", rsdpd.rsdt_addr);
+    println!("Calculated checksum 0x{:x}", chksum);
+
+
+    if chksum != 0 {
+        return false;
+    }
+
+    if rsdpd.revision == 0 {
+        return true;
+    } else {
+        //TODO: implement ACPI 2.0 support
+        return false;
+    }
 }
