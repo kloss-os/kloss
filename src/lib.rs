@@ -102,6 +102,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
         // Test out interrupts
         asm!("int 42" ::::"intel");
+        asm!("int 42" ::::"intel");
+        asm!("int 42" ::::"intel");
     }
 
     loop{}
@@ -124,7 +126,7 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 }
 
 #[no_mangle]
-pub extern fn rust_interrupt_handler(int_no: u8) {
+pub extern fn rust_interrupt_handler() {
 
-    println!("Handled interrupt {}!", int_no);
+    println!("Handled interrupt!");
 }

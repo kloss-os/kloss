@@ -8,6 +8,8 @@ bits 64
 
 general_interrupt_handler:
 
+        ;; FIXME: disable interrupts
+
         push rax
         push rcx
         push rdx
@@ -22,8 +24,6 @@ general_interrupt_handler:
         ;; Note: this is SLOW
         fxsave [saved_floats]
 
-        ;; set up argument and call handler
-        mov rdi, 17
         call rust_interrupt_handler
 
         ;; Restore floating-point registers
@@ -38,6 +38,8 @@ general_interrupt_handler:
         pop rdx
         pop rcx
         pop rax
+
+        ;; FIXME: re-enable interrupts
 
         iretq
 
