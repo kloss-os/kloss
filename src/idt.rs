@@ -95,13 +95,12 @@ pub unsafe fn idt_set_gate(num: usize,
     idt[num].flags = flags;
 
     // Split the pointer address into three parts:
-    // lower (16 bit), middle (16 bit)
-    // and upper (32 bit).
+    // lower (16 bit), middle (16 bit), and upper (32 bit).
 
     // Right-shift out the 32 upper bits.
     idt[num].base_high = (service_routine_address >> 32) as u32;
 
-    // Pick out the lower 16 bits
+    // Pick out the lower 16 bits with a logical AND
     idt[num].base_low = (service_routine_address
         & LOWER_16_MASK_64) as u16;
 
