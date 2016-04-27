@@ -167,7 +167,7 @@ pub unsafe fn idt_install() {
     let idt_base = &idt as *const [IdtEntry; IDT_NUM_ENTRIES];
 
     // This is the final value for the IDTR: a combination of
-    // its limit and length, as determined above.
+    // its limit and address, as determined above.
     let new_idtr = IdtPointer{base: idt_base as u64,
                               limit: idt_limit as u16};
 
