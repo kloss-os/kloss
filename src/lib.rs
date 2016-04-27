@@ -1,9 +1,10 @@
-// This is the main kernel file. I don't know why it's called lib. :(
+// This is the main kernel file.
 #![feature(lang_items)]
 #![no_std]
 
 #![feature(const_fn)]
 #![feature(unique)]
+#![feature(asm)]
 
 extern crate rlibc;
 extern crate spin;
@@ -83,8 +84,20 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         }
     }
 
-    println!("Loading the IDT!");
-    unsafe{idt::idt_load(0);}
+    println!("Setting up the IDT!");
+    unsafe{
+        idt::idt_install();
+        let flags =   idt::FLAG_TYPE_TRAP_GATE
+                    | idt::FLAG_DPL_KERNEL_MODE
+                    | idt::FLAG_GATE_ENABLED;
+
+        idt::idt_set_gate(42, rust_interrupt_handler,
+                          idt::SELECT_TARGET_PRIV_1, flags);
+        idt::idt_get_ptr();
+
+        // Test out interrupts
+        asm!("int 42" ::::"intel");
+    }
 
     loop{}
 }
@@ -105,8 +118,7 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-pub extern fn rust_interrupt_handler() {
+pub extern fn rust_interrupt_handler(int_no: u8) {
 
     println!("Handled an interrupt!");
-    loop{}
 }

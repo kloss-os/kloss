@@ -37,6 +37,8 @@ Projektet består av följande kataloger.
 ### doc
 
 Dokumentation, projektrapporter och andra viktiga dokument.
+Generera publik dokumentation med `cargo doc`.
+Ovan inklusive moduler genereras med `make dev_doc`.
 
 ### meta
 
