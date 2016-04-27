@@ -28,18 +28,29 @@ impl RSDPdesc {
 pub fn find_rsdp() -> usize {
     // Start by getting the ebda start address which is located at 0x40e
     let ebda_start: usize;
+    let mut ebda_segment: u32;
+    let mut ebda_offset: u32;
     unsafe {
-        asm!( "mov rax, 0x40e"
-            : "={rax}"(ebda_start) :
+        asm!( "mov rax, [0x40e]"
+            : "={rax}"(ebda_offset) :
             : "{rax}"
             : "intel" );
     }
+    ebda_segment = ebda_offset << 0x1;
+    ebda_segment = ebda_segment & 0x000FFFF0;
+    ebda_offset = ebda_offset & 0x00000001;
+
+    ebda_start = (ebda_segment | ebda_offset) as usize;
+
+
     // EBDA is max 1 KB  long
     let ebda_end = ebda_start + 0x400;
 
 
     let mut current: usize = ebda_start;
 
+    println!("{:x}", ebda_start);
+    /*
     while current <= ebda_end {
         if verify_rsdp(current) {
             return current;
@@ -63,6 +74,7 @@ pub fn find_rsdp() -> usize {
         }
     }
 
+    */
     return 0x0;
 }
 
@@ -124,7 +136,7 @@ fn gen_rsdp_desc<'a>(rsdpp: usize) -> &'a *const RSDPdesc {
     //    checksum:   *(current = current + 0x40),
     //};
 
-    println!("{:x}", rsdp_desc as *const RSDPdesc);
+    //println!("{:x}", rsdp_desc as *const RSDPdesc);
     //println!("{:X}", rsdp_desc.checksum);
 
     return rsdp_desc;
