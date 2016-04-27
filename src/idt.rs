@@ -3,6 +3,13 @@
 /// The number of expected entries in the IDT.
 const IDT_NUM_ENTRIES: usize = 256;
 
+/// Bitmask to pick out the lower 16 bits of a 64 bit integer.
+const LOWER_16_MASK_64: u64 = 0x000000000000ffff;
+
+/// Bitmask to pick out the middle 16 bits of a 64-bit integer,
+/// as counted from the least-significant bit.
+const MID_16_MASK_64: u64 = 0x00000000ffff0000;
+
 extern {
     fn _load_idt(x: *mut IdtPointer);
 }
@@ -77,7 +84,7 @@ pub unsafe fn idt_set_gate(num: usize,
 {
 
     // typecast the function pointer to an int
-    let service_routine_base = f as u64;
+    let service_routine_address = f as u64;
 
     // Reserved sections: set them to 0
     idt[num].reserved_zero = 0;
@@ -87,14 +94,22 @@ pub unsafe fn idt_set_gate(num: usize,
     idt[num].selector = selector;
     idt[num].flags = flags;
 
-    // Split the pointer address into three parts: lower (16 bit),
-    // middle (16 bit) and upper (32 bit).
+    // Split the pointer address into three parts:
+    // lower (16 bit), middle (16 bit)
+    // and upper (32 bit).
 
-    //idt[num].base_high = (base >> 16) as u16;
-    //idt[num].base_high = 0;
-    //idt[num].base_mid = 0;
-    //idt[num].base_low = (base & (1 << 16 - 1)) as u16;
-    //idt[num].base_low = 0;
+    // Right-shift out the 32 upper bits.
+    idt[num].base_high = (service_routine_address >> 32) as u32;
+
+    // Pick out the lower 16 bits
+    idt[num].base_low = (service_routine_address
+        & LOWER_16_MASK_64) as u16;
+
+    // Pick out the middle 16 bits (note that we need to
+    // right-shift after AND:ing with the relevant mask).
+    idt[num].base_mid = ((service_routine_address
+                          & MID_16_MASK_64) >> 16) as u16;
+
 }
 
 /// This represents the contents of an `IDTR` pointer,
