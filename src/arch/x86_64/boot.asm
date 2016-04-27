@@ -2,7 +2,6 @@
 ;;; http://os.phil-opp.com/entering-longmode.html
 
 global start
-global idt
 extern long_mode_start
 
 section .text
@@ -23,9 +22,6 @@ start:
 
         ;; load the 64-bit GDT
         lgdt [gdt64.pointer]
-
-        ;; load the IDT
-        lidt [idt.pointer]
 
         ;; This reloads the new 64-bit GDT selector registers
         mov ax, 16
@@ -218,11 +214,3 @@ gdt64:
 .pointer:
         dw $ - gdt64 - 1
         dq gdt64
-
-section .data
-idt:
-    resb 4096
-.pointer:
-        ;; This is data for LIDT
-        dw $ - idt - 1          ; Limit (16 bits -- length of the IDT)
-        dq idt                  ; Address (64 bits)
