@@ -14,8 +14,15 @@ const MID_16_MASK_64: u64 = 0x00000000ffff0000;
  ** Here follows bitmasks for various interesting IDT flags: **
  */
 
+// Selectors (see: http://wiki.osdev.org/Selector):
+/// I don't know why this works, but it's from Julia Evans,
+/// and it does.
+pub const SELECT_TARGET_PRIV_1: u16 = 0b1000;
+
+// End selectors
+
 /// Magic code for a trap gate type.
-pub const FLAG_TYPE_TRAP_GATE: u8 = 0b00001110;
+pub const FLAG_TYPE_TRAP_GATE: u8 = 0b00001111;
 
 /// Magic code for DPL kernel-level access:
 pub const FLAG_DPL_KERNEL_MODE: u8 = 0;
@@ -110,7 +117,7 @@ static mut idt: [IdtEntry; IDT_NUM_ENTRIES] =
 /// `selector` and flags `flags`.
 #[no_mangle]
 pub unsafe fn idt_set_gate(num: usize,
-                           f: extern "C" fn(),
+                           f: extern "C" fn(int_nr: u8),
                            selector: u16, flags: u8)
 {
 
