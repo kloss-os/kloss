@@ -5,6 +5,8 @@
 #![feature(const_fn)]
 #![feature(unique)]
 
+#![feature(asm)]
+
 extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
@@ -14,6 +16,8 @@ extern crate multiboot2;
 mod vga_buffer;
 
 mod memory;
+
+mod xsdt;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -25,6 +29,10 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
+
+    let xsdt = xsdt::find_rsdp();
+    println!("XSDT is at 0x{:x}", xsdt);
+
 
     // Parse the boot info data from the Multiboot header
     let boot_info = unsafe{ multiboot2::load(multiboot_information_address) };
