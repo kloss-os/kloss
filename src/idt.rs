@@ -71,22 +71,21 @@ static mut idt: [IdtEntry; IDT_NUM_ENTRIES] =
 /// Set interrupt handler for `num` to run function `f` using selector
 /// `selector` and flags `flags`.
 #[no_mangle]
-pub unsafe fn idt_set_gate(num: u8, f: extern "C" fn(), selector: u16, flags: u8)
+pub unsafe fn idt_set_gate(num: usize,
+                           f: extern "C" fn(),
+                           selector: u16, flags: u8)
 {
 
     // typecast the function pointer to an int
     let service_routine_base = f as u64;
 
-    //let idt = idt_get_ptr();
-
     // Reserved sections: set them to 0
-    //idt[num].reserved_zero = 0;
-    //idt[num].reserved_ist = 0;
+    idt[num].reserved_zero = 0;
+    idt[num].reserved_ist = 0;
 
     // Set selector and flags
-    //idt[num].selector = selector;
-    //idt[num].flags = flags;
-
+    idt[num].selector = selector;
+    idt[num].flags = flags;
 
     // Split the pointer address into three parts: lower (16 bit),
     // middle (16 bit) and upper (32 bit).
@@ -98,25 +97,44 @@ pub unsafe fn idt_set_gate(num: u8, f: extern "C" fn(), selector: u16, flags: u8
     //idt[num].base_low = 0;
 }
 
+/// This represents the contents of an `IDTR` pointer,
+/// that is a combination of an address of an IDT and
+/// its limit (read: length).
 #[repr(C, packed)]
 struct IdtPointer {
+    /// The limit of the IDT, that is its length.
+    /// I don't know its unit, frankly, or if it is inclusive
+    /// or exclusive of the table itself.
     limit: u16,
+    /// The base address of the IDT, that is the address at which
+    /// it starts.
     base: u64,
 }
 
+/// This represents an IDT entry. See inline comments for notes
+/// on its various components!
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
 pub struct IdtEntry {
+    /// The lower bits of the function pointer to the ISR.
     base_low: u16,
+    /// FIXME: what does this do???
     selector: u16,
-    reserved_ist: u8, // 0
+    /// Reserved space: should always be 0.
+    reserved_ist: u8,
+    /// FIXME: what does this do???
     flags: u8,
+    /// The middle 16 bits of the function pointer to the ISR.
     base_mid: u16,
+    /// The upper 32 bits of the function pointer to the ISR.
     base_high: u32,
+    /// More reserved bits. Should always be 0.
     reserved_zero: u32,
 }
 
 /// Install the module's IDT in the kernel.
+/// Note that you only need to run this once. It is safe to alter
+/// the IDT both before and after installing it.
 /// ## Safety
 /// Replaces the contents of the `IDTR` special register.
 pub unsafe fn idt_install() {

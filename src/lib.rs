@@ -84,8 +84,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         }
     }
 
-    println!("Loading the IDT!");
-    // unsafe{idt::idt_load();}
+    println!("Setting up the IDT!");
     unsafe{
         idt::idt_install();
         idt::idt_set_gate(42, rust_interrupt_handler, 17, 2);
