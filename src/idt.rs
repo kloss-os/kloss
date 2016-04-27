@@ -10,6 +10,34 @@ const LOWER_16_MASK_64: u64 = 0x000000000000ffff;
 /// as counted from the least-significant bit.
 const MID_16_MASK_64: u64 = 0x00000000ffff0000;
 
+/*
+ ** Here follows bitmasks for various interesting IDT flags: **
+ */
+
+/// Magic code for a trap gate type.
+pub const FLAG_TYPE_TRAP_GATE: u8 = 0b00001110;
+
+/// Magic code for DPL kernel-level access:
+pub const FLAG_DPL_KERNEL_MODE: u8 = 0;
+
+/// Magic code for DPL user mode access:
+pub const FLAG_DPL_USER_MODE: u8 = 0b01100000;
+
+/// Magic code for an enabled gate
+pub const FLAG_GATE_ENABLED: u8 = 0b10000000;
+
+/// Dummy value for a disabled gate.
+pub const FLAG_GATE_DISABLED: u8 = 0;
+
+/// Dummy flag for a disabled interrupt stack table,
+/// which enables the legacy mode. See the Intel programmer's
+/// Manual for more information.
+pub const INTERRUPT_STACK_TABLE_LEGACY :u8 = 0;
+
+/*
+ ** End of bitmasks **
+ */
+
 /// This represents a null (and disabled) IDT entry: it's
 /// simply a blob of zeroes. Used for initialisation.
 const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
@@ -142,6 +170,11 @@ pub struct IdtEntry {
     /// FIXME: what does this do???
     flags: u8,
     /// The middle 16 bits of the function pointer to the ISR.
+    /// Contains, MSB-to-LSB:
+    /// - Present? (0b0-0b1)
+    /// - Privilege Level (0b00-0b11)
+    /// - A zero (0)
+    /// - Type: Kind of gate. 0b0000-1111.
     base_mid: u16,
     /// The upper 32 bits of the function pointer to the ISR.
     base_high: u32,

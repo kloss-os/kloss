@@ -87,7 +87,11 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("Setting up the IDT!");
     unsafe{
         idt::idt_install();
-        idt::idt_set_gate(42, rust_interrupt_handler, 17, 2);
+        let flags =   idt::FLAG_TYPE_TRAP_GATE
+                    | idt::FLAG_DPL_KERNEL_MODE
+                    | idt::FLAG_GATE_ENABLED;
+
+        idt::idt_set_gate(42, rust_interrupt_handler, 17, flags);
         idt::idt_get_ptr();
 
         // Test out interrupts
