@@ -167,14 +167,13 @@ pub struct IdtEntry {
     selector: u16,
     /// Reserved space: should always be 0.
     reserved_ist: u8,
-    /// FIXME: what does this do???
-    flags: u8,
-    /// The middle 16 bits of the function pointer to the ISR.
     /// Contains, MSB-to-LSB:
     /// - Present? (0b0-0b1)
     /// - Privilege Level (0b00-0b11)
     /// - A zero (0)
     /// - Type: Kind of gate. 0b0000-1111.
+    flags: u8,
+    /// The middle 16 bits of the function pointer to the ISR.
     base_mid: u16,
     /// The upper 32 bits of the function pointer to the ISR.
     base_high: u32,
