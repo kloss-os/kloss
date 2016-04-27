@@ -1,8 +1,6 @@
 // This file contains functions related to reading and writing the IDT, that is the global interrupt descriptor table.
 
-#![feature(asm)]
-
-
+/// The number of expected entries in the IDT.
 const IDT_NUM_ENTRIES: usize = 256;
 
 extern {
@@ -20,7 +18,8 @@ extern {
 /// ## Safety
 /// This function should work if `IDTR` points to a valid
 /// IDT. Otherwise, all bets are off.
-pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
+pub unsafe fn idt_get_ptr()
+                          -> *mut [IdtEntry; IDT_NUM_ENTRIES] {
 
     // This represents (or rather: will represent) the IDTR
     // special-purpose register, holding the base address and limit (max
@@ -48,7 +47,7 @@ pub unsafe fn idt_get_ptr() -> *mut [IdtEntry; 256] {
 
     // This is in no way scary. It's type-casting a random blob of
     // memory to a mutable (pointer to an) array of a known size!
-    return idtr.base as *mut [IdtEntry; 256];
+    return idtr.base as *mut [IdtEntry; IDT_NUM_ENTRIES];
 }
 
 
@@ -60,18 +59,11 @@ const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
                                            reserved_ist: 0,
                                            base_mid: 0};
 
-// Declare a static IDT.
+// Declare a static IDT containing `IDT_NUM_ENTRIES`
+// null entries.
 #[no_mangle]
-static mut idt: [IdtEntry; 256] = [NULL_IDT_ENTRY; 256];
-
-// /// Load a new Interrupt Descriptor Table into the CPU.
-// ///
-// /// # Safety
-// /// This function is safe if idt_pointer is the
-// /// address of a valid list of IDT entries.
-// pub unsafe fn idt_load() {
-//     _load_idt(0);
-// }
+static mut idt: [IdtEntry; IDT_NUM_ENTRIES] =
+    [NULL_IDT_ENTRY; IDT_NUM_ENTRIES];
 
 /* Use this function to set an entry in the IDT. A lot simpler
 *  than twiddling with the GDT ;) */
@@ -124,16 +116,36 @@ pub struct IdtEntry {
     reserved_zero: u32,
 }
 
+/// Install the module's IDT in the kernel.
+/// ## Safety
+/// Replaces the contents of the `IDTR` special register.
 pub unsafe fn idt_install() {
-    let idt_limit = ((super::core::mem::size_of::<IdtEntry>() * 256) - 1);
 
-    let idt_base = (&idt as *const [IdtEntry; 256]);
+    // This is the length of one IDT entry.
+    let idt_entry_size = super::core::mem::size_of::<IdtEntry>();
 
+    // Determine the limit (read: length) of the IDT, for IDTR.
+    let idt_limit = (idt_entry_size * IDT_NUM_ENTRIES) - 1;
+
+    // Determine the start of the IDT, for IDTR.
+    // Note that this is a _pointer_.
+    let idt_base = &idt as *const [IdtEntry; IDT_NUM_ENTRIES];
+
+    // This is the final value for the IDTR: a combination of
+    // its limit and length, as determined above.
     let new_idtr = IdtPointer{base: idt_base as u64,
                               limit: idt_limit as u16};
 
-    //asm!("lidt ($0)" :: "r" (new_idtr));
-    //asm!("sti");
 
+    // Use the built-in assembly instructions to load the
+    // new values for `IDTR` from memory. Note how the
+    // pointer to `new_idtr` is copied as an immutable value --
+    // there should be no overwriting done here, only reading!
+    asm!("lidt [eax]"
+         : // return nothing
+         : "{eax}"(&new_idtr as *const IdtPointer)
+         : "{eax}" // don't clobber EAX
+         : "intel" // use Intel syntax
+    );
 
 }
