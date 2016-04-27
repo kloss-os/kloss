@@ -2,6 +2,7 @@
 
 use core::cmp::Ordering;
 use core::mem;
+use core::ptr;
 
 
 
@@ -92,9 +93,35 @@ fn verify_rsdp(rsdp: usize) -> bool {
 
 
     // TODO: Implement checksum verification
-
+    let rsdp_desc: RSDPdesc = unsafe { *gen_rsdp_desc(rsdp) };
 
     return true;
 }
 
 
+fn gen_rsdp_desc(rsdpp: usize) -> *const RSDPdesc {
+    //let mut current: usize = rsdpp;
+
+    //let signature:  *const [u8; 8];
+    //let checksum:   *const u8;
+    //let oemid:      *const [u8; 6];
+    //let revision:   *const u8;
+    //let rsdt_addr:  *const u32;
+    let mut rsdp_desc: *const RSDPdesc;
+
+    unsafe {
+        rsdp_desc = mem::uninitialized();
+        asm!( "mov rax, [rcx]"
+            : "={rax}"(rsdp_desc)
+            : "{rcx}"(rsdpp)
+            : "{rax}","{rcx}"
+            : "intel" );
+    }
+
+    //let rsdp_desc = RSDPdesc {
+    //    signature:  *current,
+    //    checksum:   *(current = current + 0x40),
+    //};
+
+    return rsdp_desc;
+}
