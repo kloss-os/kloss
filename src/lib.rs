@@ -11,11 +11,11 @@ extern crate multiboot2;
 
 #[macro_use]
 extern crate bitflags;
+extern crate x86;
 
 #[macro_use]
 #[doc(inline)]
 mod vga_buffer;
-
 mod memory;
 
 /// This is the kernel main function! Control is passed after the ASM
@@ -72,11 +72,14 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
     // Set up a frame allocator.
     let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize, kernel_end as usize, multiboot_start,
-        multiboot_end, memory_map_tag.memory_areas());
-    
+        kernel_start as usize, 
+        kernel_end as usize, 
+        multiboot_start,
+        multiboot_end, 
+        memory_map_tag.memory_areas());
+        
     memory::test_paging(&mut frame_allocator);
-
+/*
     // Try allocating _all available frames_.
     for i in 0.. {
         use memory::FrameAllocator;
@@ -85,7 +88,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
             break;
         }
     }
-
+*/
 
 
     loop{}

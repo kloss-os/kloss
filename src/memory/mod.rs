@@ -5,8 +5,8 @@
 pub use self::area_frame_allocator::AreaFrameAllocator;
 
 /// Include `PhysicalAddress`
-use self::paging::{PhysicalAddress, test_paging};
-
+use self::paging::PhysicalAddress;
+pub use self::paging::test_paging;
 mod area_frame_allocator;
 mod paging;
 /// The standard Page/Frame size

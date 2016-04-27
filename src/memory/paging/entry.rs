@@ -5,7 +5,7 @@ use memory::Frame;
 
 pub struct Entry(u64);  ///Not yet implemented
 
-
+/// Used to tagg entries vit different flaggs depending on status and functionality
 impl Entry {
     /// Define unused entry to be '0' (zero) to be able to differentiate between unused and non-present
     pub fn is_unused(&self) -> bool {

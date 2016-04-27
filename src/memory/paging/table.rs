@@ -28,7 +28,7 @@ impl<L> Table<L> where L: TableLevel
 
 impl<L> Table<L> where L: HierarchicalLevel 
 {
-    fn next_table_address(&self, index: usize) -> Option<&Table<L::NextLevel>> {
+    fn next_table_address(&self, index: usize) -> Option<usize> {
         let entry_flags = self[index].flags();
         if entry_flags.contains(PRESENT) && !entry_flags.contains(HUGE_PAGE) {
             let table_address = self as *const _ as usize;
