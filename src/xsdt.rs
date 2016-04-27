@@ -5,7 +5,7 @@ use core::mem;
 use core::ptr;
 
 
-
+#[repr(C)]
 pub struct RSDPdesc {
     signature:  [u8; 8],
     checksum:   u8,
@@ -93,13 +93,14 @@ fn verify_rsdp(rsdp: usize) -> bool {
 
 
     // TODO: Implement checksum verification
-    let rsdp_desc: RSDPdesc = unsafe { *gen_rsdp_desc(rsdp) };
+    let rsdp_desc = gen_rsdp_desc(rsdp);
+    //println!("{:x}",rsdp_desc.checksum);
 
     return true;
 }
 
 
-fn gen_rsdp_desc(rsdpp: usize) -> *const RSDPdesc {
+fn gen_rsdp_desc<'a>(rsdpp: usize) -> &'a *const RSDPdesc {
     //let mut current: usize = rsdpp;
 
     //let signature:  *const [u8; 8];
@@ -107,10 +108,10 @@ fn gen_rsdp_desc(rsdpp: usize) -> *const RSDPdesc {
     //let oemid:      *const [u8; 6];
     //let revision:   *const u8;
     //let rsdt_addr:  *const u32;
-    let mut rsdp_desc: *const RSDPdesc;
+    let ref rsdp_desc: *const RSDPdesc;
 
     unsafe {
-        rsdp_desc = mem::uninitialized();
+        //rsdp_desc = mem::uninitialized();
         asm!( "mov rax, [rcx]"
             : "={rax}"(rsdp_desc)
             : "{rcx}"(rsdpp)
@@ -122,6 +123,9 @@ fn gen_rsdp_desc(rsdpp: usize) -> *const RSDPdesc {
     //    signature:  *current,
     //    checksum:   *(current = current + 0x40),
     //};
+
+    println!("{:x}", rsdp_desc as *const RSDPdesc);
+    //println!("{:X}", rsdp_desc.checksum);
 
     return rsdp_desc;
 }
