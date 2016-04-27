@@ -10,9 +10,21 @@ const LOWER_16_MASK_64: u64 = 0x000000000000ffff;
 /// as counted from the least-significant bit.
 const MID_16_MASK_64: u64 = 0x00000000ffff0000;
 
+/// This represents a null (and disabled) IDT entry: it's
+/// simply a blob of zeroes. Used for initialisation.
+const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
+                                           selector: 0,
+                                           reserved_zero: 0,
+                                           flags: 0,
+                                           base_high: 0,
+                                           reserved_ist: 0,
+                                           base_mid: 0};
+/*
+// This isn't used anymore, but it's left for all the fond memories.
 extern {
     fn _load_idt(x: *mut IdtPointer);
 }
+*/
 
 /// Return a pointer to the Global IDT as given by
 /// The `SIDT` instruction, but with the offset data
@@ -56,15 +68,6 @@ pub unsafe fn idt_get_ptr()
     // memory to a mutable (pointer to an) array of a known size!
     return idtr.base as *mut [IdtEntry; IDT_NUM_ENTRIES];
 }
-
-
-const NULL_IDT_ENTRY: IdtEntry = IdtEntry {base_low: 0,
-                                           selector: 0,
-                                           reserved_zero: 0,
-                                           flags: 0,
-                                           base_high: 0,
-                                           reserved_ist: 0,
-                                           base_mid: 0};
 
 // Declare a static IDT containing `IDT_NUM_ENTRIES`
 // null entries.
