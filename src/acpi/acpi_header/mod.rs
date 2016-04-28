@@ -14,6 +14,24 @@ pub struct ACPISDTHeader {
 }
 
 
+#[repr(C)]
+pub struct SDT<T> {
+    header: ACPISDTHeader,
+    data: T,
+}
+
+
+impl<T> SDT<T> {
+    pub unsafe fn load_struct(address: usize) -> Option<T> {
+        if verify_struct(address) {
+            return Some(&*(address as *const T));
+        } else {
+            return None
+        }
+    }
+
+}
+
 /// Verifies struct by summing all its bytes and comparing to 0
 pub unsafe fn verify_struct(address: usize) -> bool {
     let header = &*(address as *const ACPISDTHeader);
