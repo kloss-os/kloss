@@ -1,26 +1,33 @@
-use self::acpi_sdt::ACPISDTHeader;
+use self::acpi_header::ACPISDTHeader;
 
-mod acpi_sdt;
+mod acpi_header;
 mod rsdp;
 
 
+/// A struct designating the _Root System Description Table_ (RSDT).
+/// This contains pointers to all the other SDT's in the system.
 pub struct RSDT {
+    /// The header of the RSDT
     header:     ACPISDTHeader,
-    next_rsdt:  *const RSDT,
+    /// A list of pointers to other SDTs, the constant here is _bad_ practice
+    sdt_ptrs:   [u32;64],
 }
 
 
+/// Cast a pointer to RSDT
+/// #Safety
+/// Risk of reading forbidden memory. Be careful to use this on the right address!
 unsafe fn load_rsdt_addr(rsdt_addr: usize) -> Option<&'static RSDT> {
-    let rsdt = &*(rsdt_addr as *const RSDT);
-    //if verify_acpisdth(&rsdt.header) {
-    if sum_bytes(rsdt_addr, rsdt.header.length as usize) == 0 {
-        return Some(rsdt);
+    if acpi_header::verify_struct(rsdt_addr) {
+        return Some(&*(rsdt_addr as *const RSDT));
     } else {
         return None;
     }
 }
 
-pub fn load_rsdt_root() -> Option<&'static RSDT> {
+
+/// Loads an RSDT, scary stuff!
+pub fn load_rsdt() -> Option<&'static RSDT> {
     if let Some(rsdp) = rsdp::load_rsdp() {
         if let Some(rsdt_root) = unsafe{load_rsdt_addr(rsdp.rsdt_addr as usize)} {
             return Some(rsdt_root);
@@ -31,24 +38,13 @@ pub fn load_rsdt_root() -> Option<&'static RSDT> {
 }
 
 
+/// This is mainly for testing, should delete once we're sure of things
 pub fn get_rsdt() -> u8 {
-    if let Some(rsdt) = load_rsdt_root() {
-        println!("Loaded root rsdt!");
+    if let Some(rsdt) = load_rsdt() {
+        println!("Loaded rsdt!");
         return 0x1;
     } else {
-        println!("Didn't root rsdt!");
+        println!("Didn't load rsdt!");
         return 0x0;
     }
-}
-
-
-unsafe fn sum_bytes(start: usize, len: usize) -> u8 {
-    let mut sum: u32 = 0;
-
-    for i in start..(start + len) {
-        let current: u32 = *(i as *const u32);
-        sum = (sum + current) & 0xFF;
-    }
-
-    return sum as u8;
 }
