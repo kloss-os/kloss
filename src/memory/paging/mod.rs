@@ -1,3 +1,10 @@
+/// Purpose of these submudules is to create a recursive page table hierarchy 
+/// with four levels of pagetables in it.
+/// To acomplish this a enum Hierarchy to differentiate between the top three 
+/// levels and the fourth. As a result of this we can extract the addresses stored
+/// in the first three levels then jump to the last level (level 1) retrive 
+/// its address and then move to the offsets.  
+
 pub use self::entry::*;
 
 ///FrameAllocator is the method used to create Frames from Pages
@@ -77,13 +84,15 @@ impl RecursivePageTable {
     }
 
 
-/// Translates a Virtual_Address to a PhysicalAddress
+/// Translates a Virtual_Address to a corresponding PhysicalAddress
+/// Returns 'None' if the address is not mapped
     pub fn translate(&self, virtual_address: VirtualAddress) -> Option<PhysicalAddress> {
         let offset = virtual_address % PAGE_SIZE;
         self.translate_page(Page::containing_address(virtual_address))
             .map(|frame| frame.number * PAGE_SIZE + offset)
     }
-    /// The page in the next level is saved in P3 and found through .next_table and using the index where P4 was found.
+    /// The page in the next level is saved in P3 and found through .next_table 
+    /// using the index where P4 was found.
     fn translate_page(&self, page: Page) -> Option<Frame> {
         let  p3 = self.p4().next_table(page.p4_index());
         /// If page is flagged as HUGE_FRAME, 
@@ -124,7 +133,9 @@ impl RecursivePageTable {
         
     }
     
-    /// Maps Pages to Tables and checks if correctly created.
+    /// Maps the page to the frame with the provided flags.
+    /// The `PRESENT` flag is added by default. Needs a
+    /// `FrameAllocator` as it might need to create new page tables.
     pub fn map_to<A>(&mut self, 
                      page: Page, 
                      frame: Frame, 
@@ -140,7 +151,8 @@ impl RecursivePageTable {
         p1[page.p1_index()].set(frame, flags | PRESENT);
     }
     
-    /// Maps a page to a frame with correct flags using the FrameAllocator
+    /// Maps the page to some free frame with the provided flags.
+    /// The free frame is allocated from the given `FrameAllocator`.
     pub fn map<A>(&mut self, 
                   page: Page, 
                   flags: EntryFlags, 
@@ -151,7 +163,8 @@ impl RecursivePageTable {
         self.map_to(page, frame, flags, allocator)
     }
     
-    /// För tillfället en 'bekväm pryl som används senare', inte förklarat ännu
+    /// Identity map the the given frame with the provided flags.
+    /// The `FrameAllocator` is used to create new page tables if needed.
     pub fn identity_map<A>(&mut self, 
                            frame: Frame, 
                            flags: EntryFlags, 
@@ -162,6 +175,8 @@ impl RecursivePageTable {
         self.map_to(page, frame, flags, allocator)
     }
     
+    /// Unmaps the given page and adds all freed frames to the given
+    /// `FrameAllocator`.
     fn unmap<A>(&mut self, page: Page, allocator: &mut A)
         where A: FrameAllocator
     {
