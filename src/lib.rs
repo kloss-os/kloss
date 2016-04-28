@@ -30,8 +30,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
 
-    let rsdp = acpi::get_rsdp();
-    println!("XSDT is at 0x{:x}", rsdp);
+//    let rsdp = acpi::get_rsdp();
+    let rsdt = acpi::get_rsdt();
 
 
     // Parse the boot info data from the Multiboot header
