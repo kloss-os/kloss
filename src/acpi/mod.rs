@@ -10,9 +10,21 @@ pub struct RSDT {
     /// The header of the RSDT
     header:     ACPISDTHeader,
     /// A list of pointers to other SDTs, the constant here is _bad_ practice
+    /// Might do for MVP. Should be easier to fix with more rust-skills
     sdt_ptrs:   [u32;64],
 }
 
+
+pub struct MADT {
+    /// ACPI SDT Header
+    header:     ACPISDTHeader,
+    /// Local controller address
+    local_ctrl: u32,
+    /// Flags
+    flags:      u32,
+    /// Entries, need to research this
+    entry:      [u32; 64]
+}
 
 /// Cast a pointer to RSDT
 /// #Safety
@@ -36,6 +48,16 @@ pub fn load_rsdt() -> Option<&'static RSDT> {
         return None;
     }
 }
+
+
+
+
+
+
+
+
+
+
 
 
 /// This is mainly for testing, should delete once we're sure of things

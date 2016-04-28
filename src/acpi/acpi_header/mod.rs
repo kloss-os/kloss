@@ -14,29 +14,17 @@ pub struct ACPISDTHeader {
 }
 
 
-#[repr(C)]
-pub struct SDT<T> {
-    header: ACPISDTHeader,
-    data: T,
-}
-
-
-impl<T> SDT<T> {
-    pub unsafe fn load_struct(address: usize) -> Option<T> {
-        if verify_struct(address) {
-            return Some(&*(address as *const T));
-        } else {
-            return None
-        }
-    }
-
-}
-
 /// Verifies struct by summing all its bytes and comparing to 0
 pub unsafe fn verify_struct(address: usize) -> bool {
-    let header = &*(address as *const ACPISDTHeader);
+    let header = load_acpisdt_header(address);
     return sum_bytes(address, header.length as usize) == 0;
 }
+
+/// Casts an acpisdt header from an address
+unsafe fn load_acpisdt_header(address: usize) -> &'static ACPISDTHeader {
+    &*(address as *const ACPISDTHeader)
+}
+
 
 /// Helper to calculate the sum of an array of bytes.
 /// #Safety
