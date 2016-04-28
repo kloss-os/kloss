@@ -17,7 +17,7 @@ mod vga_buffer;
 
 mod memory;
 
-mod xsdt;
+mod acpi;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -30,8 +30,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
 
-    let xsdt = xsdt::find_rsdp();
-    println!("XSDT is at 0x{:x}", xsdt);
+    let rsdp = acpi::get_rsdp();
+    println!("XSDT is at 0x{:x}", rsdp);
 
 
     // Parse the boot info data from the Multiboot header

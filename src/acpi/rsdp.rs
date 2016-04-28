@@ -1,21 +1,29 @@
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 
 
-// A struct representing the descriptor, it has to be packed C-style
+
+/// A struct representing the RSDP descriptor, it has to be packed C-style
+/// Based on OSDEV C struct
 #[repr(C)]
 pub struct RSDPdesc {
+    /// Signature, is guaranteed to be "RSD PTR "
     signature:  [u8; 8],
-    checksum:   u8,
-    oemid:      [u8; 6],
-    revision:   u8,
-    rsdt_addr:  u32,
+    /// Checksum modifier, such that the sum of all bytes & 0xFF == 0x00
+    pub checksum:   u8,
+    /// OEM ID
+    pub oemid:      [u8; 6],
+    /// Indicates ACPI version
+    pub revision:   u8,
+    /// Pointer to RSDT/XSDT
+    pub rsdt_addr:  u32,
 }
+// TODO: make extended table work (ACPIv2 and later)
 
 
 /// Find RSD Pointer
 /// #Safety
-/// Read-only from memory addresses
-pub fn find_rsdp() -> usize {
+/// Read-only from memory addresses, but still terrifying
+pub fn load_rsdp() -> Option<&'static RSDPdesc> {
     // Start by getting the ebda start address which is located at 0x40e
     // The address is a segmented 2-byte pointer
     let ebda_start: usize;
@@ -49,9 +57,9 @@ pub fn find_rsdp() -> usize {
     // Note that the identifier is on a 16-byte boundary
     let mut current: usize = ebda_start;
     while current <= ebda_end {
-        if unsafe {verify_rsdp(current)} {
+        if let Some(rsdp) = unsafe {load_rsdp_addr(current)} {
             // YES FOUND IT WOOOO
-            return current;
+            return Some(rsdp);
         } else {
             // Check next address, 16 bytes ahead!
             current = current + 0x10;
@@ -66,26 +74,38 @@ pub fn find_rsdp() -> usize {
 
     // Same as above, but in MBOS
     while current <= mbos_end {
-        if unsafe{verify_rsdp(current)} {
-            return current;
+        if let Some(rsdp) = unsafe {load_rsdp_addr(current)} {
+            // YES FOUND IT WOOOO
+            return Some(rsdp);
         } else {
+            // Check next address, 16 bytes ahead!
             current = current + 0x10;
         }
     }
 
-    return 0x0;
+    return None;
 }
 
 
+/// Cast an address as an RSDP descriptor, verify it, return if valid
+/// # Safety
+/// This _will_ (only) read raw memory data, so don't throw forbidden addresses into it
+unsafe fn load_rsdp_addr(rsdp_addr: usize) -> Option<&'static RSDPdesc> {
+    // THIS IS HOW YOU RECAST SH... stuff
+    // Phil Opp's multiboot2 code uses similar syntax
+    let rsdp_desc = &*(rsdp_addr as *const RSDPdesc);
+    if verify_rsdp(rsdp_desc) {
+        return Some(rsdp_desc);
+    } else {
+        return None;
+    }
+}
 
-unsafe fn verify_rsdp(rsdpp: usize) -> bool {
+/// Verifies a given RSDP descriptor (looks at ID and checksum)
+fn verify_rsdp(rsdpd: &'static RSDPdesc) -> bool {
     // We need an ASCII string containing "RSD PTR "
     let str: [u8; 8] = [82, 83, 68, 32, 80, 84, 82, 32];
     //let str: &[u8; 8] = b"RSD PTR ";
-
-    // THIS IS HOW YOU RECAST SH... stuff
-    // Phil Opp's multiboot2 code uses similar syntax
-    let rsdpd = &*(rsdpp as *const RSDPdesc);
 
     // Check identifier string
     // Got this line, more or less, from
