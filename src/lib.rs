@@ -30,7 +30,6 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
 
-//    let rsdp = acpi::get_rsdp();
     let rsdt = acpi::get_rsdt();
 
 
