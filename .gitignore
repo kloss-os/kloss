@@ -12,5 +12,5 @@
 # EMACS Files
 *~
 
-# Ignore the GDB build directory
-/rust-os-gdb/
+# Custom GDB
+rust-os-gdb
