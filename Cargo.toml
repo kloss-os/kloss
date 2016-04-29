@@ -8,6 +8,10 @@ authors = ["Albin Stjerna <alst4459@student.uu.se>",
 [lib]
 crate-type = ["staticlib"]
 
+[[test]]
+name = "no_std_build"
+harness = false
+
 [dependencies]
 rlibc = "0.1.4"
 spin = "0.3.4"
