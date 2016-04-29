@@ -25,7 +25,7 @@ impl<L> Table<L> where L: TableLevel
         }
     }
 }
-/// 
+///
 impl<L> Table<L> where L: HierarchicalLevel {
     /// Gives the address in the page one level down in the hierarchy. Only usable for p4, P3 and P2.
     fn next_table_address(&self, index: usize) -> Option<usize> {
@@ -55,14 +55,14 @@ impl<L> Table<L> where L: HierarchicalLevel {
                                 -> &mut Table<L::NextLevel>
         where A: FrameAllocator
     {
-        /// If next table returns none, an assert checks for HUGE_PAGE flag
+        // If next table returns none, an assert checks for HUGE_PAGE flag
         if self.next_table(index).is_none() {
             assert!(!self.entries[index].flags().contains(HUGE_PAGE),
                    "mapping code does not support huge pages");
             let frame = allocator.allocate_frame().expect("no frames available");
             self.entries[index].set(frame, PRESENT | WRITABLE);
             self.next_table_mut(index).unwrap().zero();
-        }   
+        }
         self.next_table_mut(index).unwrap()
     }
 
@@ -84,7 +84,7 @@ impl<L> IndexMut<usize> for Table<L> where L: TableLevel {
     }
 }
 
-/// Enums for page table levels to enable security, e.g. we don't want to go deeper than Page_Table_1, but 4->3, 3->2 and 2->1 is ok. 
+/// Enums for page table levels to enable security, e.g. we don't want to go deeper than Page_Table_1, but 4->3, 3->2 and 2->1 is ok.
 pub trait TableLevel {}
 
 pub enum Level4{}
