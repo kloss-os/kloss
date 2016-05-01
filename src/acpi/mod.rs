@@ -1,4 +1,6 @@
+
 use self::acpi_header::ACPISDTHeader;
+use core::mem;
 
 mod acpi_header;
 mod rsdp;
@@ -12,9 +14,10 @@ mod rsdp;
 pub struct RSDT {
     /// The header of the RSDT
     header:     ACPISDTHeader,
-    /// A list of pointers to other SDTs, the constant here is _bad_ practice
-    /// Might do for MVP. Should be easier to fix with more rust-skills
-    sdt_ptrs:   [u32;4],
+    /// This is the first pointer in an array
+    /// You can use the first pointer, along with .offset() method to increment by 32-bit boundary.
+    /// The length of the array is given by rsdt.header.length - mem::size_of::<ACPISDTHeader>()
+    first_ptr:  u32,
 }
 
 
@@ -32,8 +35,10 @@ pub struct MADT {
     /// Flags
     flags:      u32,
 
-    // After this, we have a variable length sequence
-    // of variable length records
+    /// After this, we have a variable length sequence of variable length records.
+    /// Using .offset() it will increment the address by 16 bits.
+    /// Since _it seems_ the ISO struct is on a 16-bit boundary, this makes sense.
+    first_intctr: u8,
 }
 
 /// Universal header for interrupt controller description
@@ -115,20 +120,70 @@ pub fn load_rsdt() -> Option<&'static RSDT> {
 
 
 /// Finds a table of a certain type in an rsdt
-pub unsafe fn find_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
-    for sdth in rsdt.sdt_ptrs.iter() {
-        if  acpi_header::verify_struct(*sdth as usize) &&
+pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
+    // Make a raw pointer for the first SDT pointer
+    let first: *const u32 = &rsdt.first_ptr;
+    // Calculate amount of pointers
+    let num_ptr = (rsdt.header.length
+                   - mem::size_of::<ACPISDTHeader>() as u32)
+                    / 4;
+
+    // Step through the list until desired table is found
+    for i in 0..num_ptr {
+        let current = first.offset(i as isize);
+        println!("Checking address {:x}", *current);
+        if  acpi_header::verify_struct(*current as usize) &&
             acpi_header::find_type(
                 acpi_header::load_acpisdt_header(
-                    *sdth as usize))
-            == acpi_header::SDTtype::MADT
-            {
-                return Some(&*(*sdth as *const MADT));
-            }
+                    *current as usize))
+            == Some(acpi_header::SDTtype::MADT)
+        {
+            return Some(&*(*current as *const MADT));
+        }
     }
 
     return None;
 }
+
+/// Get the I/O APIC
+pub unsafe fn load_ioapic(madt: &'static MADT) -> Option<&'static IOAPIC> {
+    // Get first byte address
+    let start: *const u8 = &madt.first_intctr;
+
+    // Get amount of bytes in bound
+    let num_addr = madt.header.length
+                    - mem::size_of::<ACPISDTHeader>() as u32
+                    - (4 + 4); // Remove size of descriptors
+
+    println!("Num addr {}", num_addr as u32);
+    // Iterate over bound
+    let mut i = 0;
+    while i < num_addr {
+        let cur_addr = start.offset(i as isize);
+        println!("Checking address {:x}", cur_addr as u32);
+        let cur_head = &*(*cur_addr as *const IntCtrlHeader);
+
+        println!("Type: {:x}, Len: {:x}",
+                 cur_head.entry_type as u32,
+                 cur_head.record_length as u32);
+
+        if cur_head.entry_type == 0b01 {
+            return Some( &*(*cur_addr as *const IOAPIC) );
+        } else {
+            i += cur_head.record_length as u32;
+        }
+    }
+
+    return None;
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -138,9 +193,19 @@ pub fn get_rsdt() -> u8 {
     if let Some(rsdt) = load_rsdt() {
         println!("Loaded rsdt, length is 0x{:x}!", rsdt.header.length);
 
-        if let Some(madt) = unsafe { find_madt(rsdt) } {
+        if let Some(madt) = unsafe { load_madt(rsdt) } {
             println!("Loaded madt!");
             println!("Length: {:x}", madt.header.length);
+            println!("LCA: {:x}", madt.local_ctrl);
+            println!("LCA: {:x}", madt.flags);
+
+            if let Some(ioapic) = unsafe { load_ioapic(madt) } {
+                println!("Loaded I/O APIC!");
+                println!("ID: {:x}, Address: {:x}, GSIB: {:x}",
+                        ioapic.id, ioapic.reserved, ioapic.address);
+            } else {
+                println!("Not loaded ioapic D:");
+            }
         } else {
             println!("Not loaded madt!");
         }

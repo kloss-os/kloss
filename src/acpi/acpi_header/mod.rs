@@ -1,5 +1,6 @@
 /// A struct representing the ACPI SDT header, it has to be packed C-style
 /// Based on OSDEV C struct
+/// Total size of header is 36 bytes (0x24)
 #[repr(C)]
 pub struct ACPISDTHeader {
     pub signature:  [u8; 4],
@@ -38,6 +39,7 @@ pub unsafe fn load_acpisdt_header(address: usize) -> &'static ACPISDTHeader {
 unsafe fn sum_bytes(start: usize, len: usize) -> u8 {
     let mut sum: u32 = 0;
 
+    println!("current length: {:x}", len);
     for i in start..(start + len) {
         let current: u32 = *(i as *const u32) & 0xFF;
         sum = (sum + current) & 0xFF;
@@ -46,12 +48,10 @@ unsafe fn sum_bytes(start: usize, len: usize) -> u8 {
     return sum as u8;
 }
 
-fn cmp_sig(a: [u8; 4], b: [u8; 4]) -> bool {
-    a.iter().zip(b.iter()).all(|(x,y)| x == y)
-}
 
 
-pub fn find_type(header: &'static ACPISDTHeader) -> SDTtype {
+/// Given a header, extract and return the type it has
+pub fn find_type(header: &'static ACPISDTHeader) -> Option<SDTtype> {
     let sdt_sig: [(&[u8; 4], SDTtype); 2]=
         [(b"RSDT", SDTtype::RSDT),
          (b"APIC", SDTtype::MADT)];
@@ -59,13 +59,14 @@ pub fn find_type(header: &'static ACPISDTHeader) -> SDTtype {
     for i in header.signature.iter() {
         println!("SIG {}", *i as char);
     }
+
     for &(sig,sdtt) in sdt_sig.iter() {
         if sig.iter()
               .zip(header.signature.iter())
               .all(|(x,y)| x == y) {
-            return sdtt;
+            return Some(sdtt);
         }
     }
 
-    return SDTtype::Invalid;
+    return None;
 }
