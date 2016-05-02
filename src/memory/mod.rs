@@ -30,7 +30,7 @@ impl Frame {
     }
     /// Does what the trait 'Clone' does, but if implemented like this it remains private. If not prvate like this,  the frame allocator could free the same frame twice and so on.
     fn clone(&self) -> Frame {
-        Frame { number: self:number }
+        Frame { number: self.number }
     }
 }
 
