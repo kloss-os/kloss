@@ -194,6 +194,7 @@ set_up_SSE:
 ;;; Reserve some space for a (very minimal) stack.
 section .bss
 align 4096
+
 p4_table:
     resb 4096
 p3_table:
@@ -203,8 +204,6 @@ p2_table:
 stack_bottom:
     resb 4096
 stack_top:
-
-
 
 ;;; This is the global descriptor table. We need to set it up to be in
 ;;; real long mode. Basically, it's yet another piece of weird assembler

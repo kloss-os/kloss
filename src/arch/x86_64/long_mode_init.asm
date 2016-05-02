@@ -4,12 +4,14 @@
 
 global long_mode_start
 
+extern rust_main
+
 section .text
 bits 64
 long_mode_start:
 
+
         ;; Call Rust main
-        extern rust_main
         call rust_main
 
         .os_returned:

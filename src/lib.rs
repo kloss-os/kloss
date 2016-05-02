@@ -4,10 +4,16 @@
 
 #![feature(const_fn)]
 #![feature(unique)]
+#![feature(asm)]
 
 extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
+
+
+extern {
+    fn general_interrupt_handler();
+}
 
 #[macro_use]
 extern crate bitflags;
@@ -17,6 +23,8 @@ extern crate x86;
 #[doc(inline)]
 mod vga_buffer;
 mod memory;
+
+mod idt;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -72,12 +80,12 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
     // Set up a frame allocator.
     let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize, 
-        kernel_end as usize, 
+        kernel_start as usize,
+        kernel_end as usize,
         multiboot_start,
-        multiboot_end, 
+        multiboot_end,
         memory_map_tag.memory_areas());
-        
+
     memory::test_paging(&mut frame_allocator);
 /*
     // Try allocating _all available frames_.
@@ -88,8 +96,23 @@ pub extern fn rust_main(multiboot_information_address: usize) {
             break;
         }
     }
-*/
+    */
 
+    println!("Setting up the IDT!");
+    unsafe{
+        idt::idt_install();
+        let flags =   idt::FLAG_TYPE_TRAP_GATE
+                    | idt::FLAG_DPL_KERNEL_MODE
+                    | idt::FLAG_GATE_ENABLED;
+
+        idt::idt_set_gate(42, general_interrupt_handler,
+                          idt::SELECT_TARGET_PRIV_1, flags);
+
+        // Test out interrupts
+        asm!("int 42" ::::"intel");
+        asm!("int 42" ::::"intel");
+        asm!("int 42" ::::"intel");
+    }
 
     loop{}
 }
@@ -108,4 +131,10 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     println!("    {}", fmt);
 
     loop{}
+}
+
+#[no_mangle]
+pub extern fn rust_interrupt_handler() {
+
+    println!("Handled interrupt!");
 }

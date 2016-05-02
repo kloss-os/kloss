@@ -1,4 +1,4 @@
-# FLAGSc
+# FLAGS
 arch ?= x86_64
 target ?= $(arch)-unknown-linux-gnu
 
@@ -73,7 +73,7 @@ clean:
 	rm -rf target
 
 run: $(iso)
-	qemu-system-x86_64 -cdrom $(iso) -s
+	qemu-system-x86_64 -cdrom $(iso) -s -d int -no-reboot
 
 iso: $(iso)
 
@@ -88,7 +88,8 @@ $(kernel): cargo $(rust_os) $(assembly_object_files) $(linker_script)
 	ld -n --gc-sections -T $(linker_script) -o $(kernel) $(assembly_object_files) $(rust_os)
 
 cargo:
-	@cargo rustc --target $(target) -- -Z no-landing-pads
+
+	@cargo rustc --target $(target) -- -Z no-landing-pads -C no-redzone
 
 # compile assembly files
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
@@ -103,7 +104,7 @@ debug: $(iso)
 gdb:
 	@rust-os-gdb/bin/rust-gdb $(kernel) -ex "target remote :1234"
 
-test: cargo_test sys_test 
+test: cargo_test sys_test
 
 cargo_test:
 	@echo "$(TEXT_RED)Not implemented$(TEXT_RESET)"
