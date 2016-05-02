@@ -11,21 +11,28 @@ pub use self::entry::*;
 use memory::{PAGE_SIZE, Frame, FrameAllocator}; // needed later
 use self::table::{Table, Level4};
 use core::ptr::Unique;
+
 //use self::paging::PhysicalAddress;
 //use self::entry::HUGE_PAGE;
 
 mod entry;
 mod table;
 
+///Used to temporary map a frame to virtyal address
+mod temporary_page;
+
 const ENTRY_COUNT: usize = 512;
 
 pub type PhysicalAddress = usize;
 pub type VirtualAddress = usize;
 
-#[derive(Debug, Clone, Copy]
+
+/// Copy so that it can be used after  passing 'map_to' and similar functions.
+#[derive(Debug, Clone, Copy)]
 pub struct Page {
     number: usize,
 }
+
 
 impl Page {
     pub fn containing_address(address: VirtualAddress) -> Page {
@@ -66,8 +73,6 @@ impl Page {
 pub struct RecursivePageTable {
     p4: Unique<Table<Level4>>,
 }
-
-
 
 /// In order to find the complete address we implement a way to go through four levels of
 /// page-tables in order to retrive four pices of the address.
@@ -196,6 +201,19 @@ impl RecursivePageTable {
 
     }
 
+}
+
+
+/// InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU
+pub struct InactivePageTable {
+    p4_frame: Frame,
+}
+
+impl InactivePageTable {
+    pub fn new(frame: Frame) -> InactivePageTable {
+        //TODO zero and recursive map the frame
+        InactivePageTable {p4_frame: frame } 
+    }
 }
 /// Basic tresting of different page table levels and allocations as well as mapping specific bits in specific levels
 pub fn test_paging<A>(allocator: &mut A)
