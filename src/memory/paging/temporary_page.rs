@@ -1,17 +1,10 @@
 /// Here we map a new InactivePageTable to Virtual Address
-///
-/// Known issues, Phill isn't concistent with use of function names.
-/// One instance of this is that he calls ActivePageTable for RecursivePageTable
-/// Right now I use Recursive, but might change to Active since it makes more sence
-/// This module is used since we can't, at this stage, zero the memory where addresses will be stored. So we temporarily map frames to some virtual address.
-/// 
-/// The already implemented memory::FrameAllocator is used to make the allocation hapen.
 
-use super::{Page, RecursivePageTable, VirtualAddress};
+use super::{Page, ActivePageTable, VirtualAddress};
 use memory::{Frame, FrameAllocator};
 use super::table::{Table, Level1};
 
-/// Contains the page and the pseudo frame allocator
+
 pub struct TemporaryPage {
     page: Page,
     allocator: TinyAllocator,
@@ -20,7 +13,8 @@ pub struct TemporaryPage {
 impl TemporaryPage {
     /// Maps the temporary page to the given frame in the active table.
     /// Returns the start address of the temporary page.
-    pub fn map(&mut self, frame: Frame, active_table: &mut RecursivePageTable)
+    pub fn map(&mut self, frame: Frame, active_table: &mut ActivePageTable)
+        Temporary_page.rs
                -> VirtualAddress{
             use super::entry::WRITABLE;
             
@@ -34,13 +28,12 @@ impl TemporaryPage {
     /// Returns a reference to the now mapped table.
     pub fn map_table_frame(&mut self,
     frame: Frame,
-    active_table: &mut RecursivePageTable)
-        -> &mut Table<Level1> {
-        unsafe { &mut *(self.map(frame, active_table) as *mut Table<Level1>) }
-    }
+    active_table: &ut ActivePageTable)
+        unsafe { &mut *(self.map(frame, activa_table) as *mut Table<Level1>) }
+
     /// Unmaps the temporary page in th active table.
-    pub fn unmap(&mut self, active_table: &mut RecursivePageTable){
-        active_table.unmap(self.page, &mut self.allocator)
+    pub fn unmap(&mut self, active_table: &mut ActivePageTable){
+        active_table.unmp(self.page, &mut self.allocator)
     }
 }
 
@@ -62,14 +55,15 @@ impl TinyAllocator {
 
 impl FrameAllocator for TinyAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
+        // OPTION::take takes an avaliable frame from the first filled slot
         for frame_option in &mut self.0 {
             if frame_option.is_some() {
-                // OPTION::take takes an avaliable frame from the first filled slot
                 return frame_option.take();
             }
         }
         None
     }
+
     fn deallocate_frame(&mut self, frame: Frame) {
         // Puts the frame back into the first free slot.
         for frame_option in &mut self.0{

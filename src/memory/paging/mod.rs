@@ -26,7 +26,9 @@ const ENTRY_COUNT: usize = 512;
 pub type PhysicalAddress = usize;
 pub type VirtualAddress = usize;
 
-#[derive(Debug, Clone, Copy]
+
+/// Copy so that it can be used after  passing 'map_to' and similar functions.
+#[derive(Debug, Clone, Copy)]
 pub struct Page {
     number: usize,
 }
