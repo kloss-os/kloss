@@ -1,9 +1,17 @@
 /// Here we map a new InactivePageTable to Virtual Address
+///
+/// Known issues, Phill isn't concistent with use of function names.
+/// One instance of this is that he calls ActivePageTable for RecursivePageTable
+/// Right now I use Recursive, but might change to Active since it makes more sence
+/// This module is used since we can't, at this stage, zero the memory where addresses will be stored. So we temporarily map frames to some virtual address.
+/// 
+/// The already implemented memory::FrameAllocator is used to make the allocation hapen.
 
 use super::{Page, RecursivePageTable, VirtualAddress};
 use memory::{Frame, FrameAllocator};
 use super::table::{Table, Level1};
 
+/// Contains the page and the pseudo frame allocator
 pub struct TemporaryPage {
     page: Page,
     allocator: TinyAllocator,
@@ -45,8 +53,7 @@ struct TinyAllocator([Option<Frame>; 3]);
 /// Some other allocator is used/imported to the constructor
 impl TinyAllocator {
     fn new<A>(allocator: &mut A) -> TinyAllocator
-        where A: FrameAllocator
-        {
+        where A: FrameAllocator{
         let mut f = || allocator.allocate_frame();
         let frames = [f(), f(),f()];
         TinyAllocator(frames)
@@ -55,9 +62,9 @@ impl TinyAllocator {
 
 impl FrameAllocator for TinyAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
-        // OPTION::take takes an avaliable frame from the first filled slot
         for frame_option in &mut self.0 {
             if frame_option.is_some() {
+                // OPTION::take takes an avaliable frame from the first filled slot
                 return frame_option.take();
             }
         }
