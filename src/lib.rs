@@ -129,10 +129,29 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         // Enable global interrupts!
         asm!("sti" ::::"intel");
 
-        //memory::test_paging(&mut frame_allocator);
     }
 
+    println!("Ran {} recursive calls", call_recursively(10));
+    println!("3! = {}", fac(3));
+
+        //memory::test_paging(&mut frame_allocator);
+
     loop{}
+}
+
+fn call_recursively(n: u64) -> u64 {
+    match n {
+        0 => 0,
+        _ => 1 + call_recursively(n-1)
+    }
+}
+
+fn fac(n: u64) -> u64 {
+    match n {
+        0 => 1,
+        1 => 1,
+        _ => n * fac(n-1)
+    }
 }
 
 /// This is an override for a language feature. Don't know what it does.
