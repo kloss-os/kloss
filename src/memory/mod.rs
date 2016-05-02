@@ -28,6 +28,10 @@ impl Frame {
     fn start_address(&self) -> PhysicalAddress {
         self.number * PAGE_SIZE
     }
+    /// Does what the trait 'Clone' does, but if implemented like this it remains private. If not prvate like this,  the frame allocator could free the same frame twice and so on.
+    fn clone(&self) -> Frame {
+        Frame { number: self:number }
+    }
 }
 
 /// Define a `FrameAllocator` interface: every `FrameAllocator` can
