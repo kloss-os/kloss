@@ -1,7 +1,7 @@
 /// A struct representing the ACPI SDT header, it has to be packed C-style
 /// Based on OSDEV C struct
 /// Total size of header is 36 bytes (0x24)
-#[repr(C)]
+#[repr(C, packed)]
 pub struct ACPISDTHeader {
     pub signature:  [u8; 4],
     pub length:     u32,

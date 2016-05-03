@@ -10,7 +10,7 @@ mod rsdp;
 /// A struct designating the _Root System Description Table_ (RSDT).
 /// This contains pointers to all the other SDT's in the system.
 /// Signature is "RSDT"
-#[repr(C)]
+#[repr(C, packed)]
 pub struct RSDT {
     /// The header of the RSDT
     header:     ACPISDTHeader,
@@ -26,7 +26,7 @@ pub struct RSDT {
 
 /// The _Multiple APIC Description Table_ (MADT) describes all interrupt controllers
 /// Signature is "APIC"
-#[repr(C)]
+#[repr(C, packed)]
 pub struct MADT {
     /// ACPI SDT Header
     header:     ACPISDTHeader,
@@ -42,20 +42,20 @@ pub struct MADT {
 }
 
 /// Universal header for interrupt controller description
-#[repr(C)]
-pub struct IntCtrlHeader {
+#[repr(C, packed)]
+pub struct IntCtrlHeader_entry {
     /// Describes type of interrupt controller
     entry_type:     u8,
     /// Length of its table
     record_length:  u8,
 }
 
-/// _Processor Local APIC_ (LAPIC), indicated by entry type 0
+/// _Processor Local APIC_ (LAPIC, packed), indicated by entry type 0
 /// Represents a single physical processor and its local interrupt controller
-#[repr(C)]
-pub struct LAPIC {
+#[repr(C, packed)]
+pub struct LAPIC_entry {
     /// Universal header
-    header:     IntCtrlHeader,
+    header:     IntCtrlHeader_entry,
     /// ACPI Processor ID
     acpi_proc_id: u8,
     /// APIC ID
@@ -65,23 +65,26 @@ pub struct LAPIC {
 }
 
 /// _I/O APIC_ (IOAPIC), indicated by entry type 1
-#[repr(C)]
-pub struct IOAPIC {
+#[repr(C, packed)]
+pub struct IOAPIC_entry {
     /// Universal header
-    header:   IntCtrlHeader,
+    header:   IntCtrlHeader_entry,
     /// I/O APIC's ID
     id:       u8,
     /// Reserved, value is 0 (_padding?_)
     reserved: u8,
     /// I/O APIC's Address
     address:  u32,
+    /// Global System Interrupt Base
+    gsib:     u32,
+
 }
 
 /// _Interrupt Source Override_, indicated by entry type 2
-#[repr(C)]
-pub struct ISO {
+#[repr(C, packed)]
+pub struct ISO_entry {
     /// Universal header
-    header:     IntCtrlHeader,
+    header:     IntCtrlHeader_entry,
     /// Bus Source
     bus_source: u8,
     /// IRQ Source
@@ -92,6 +95,12 @@ pub struct ISO {
     flags:      u16,
 }
 
+
+
+/// The _actual_ IOAPIC, found using a MADT entry
+pub struct IOAPIC {
+    
+}
 
 
 
@@ -145,8 +154,9 @@ pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     return None;
 }
 
+
 /// Get the I/O APIC
-pub unsafe fn load_ioapic(madt: &'static MADT) -> Option<&'static IOAPIC> {
+pub unsafe fn load_ioapic_entry(madt: &'static MADT) -> Option<&'static IOAPIC_entry> {
     // Get first byte address
     let start: *const u8 = &madt.first_intctr;
 
@@ -161,14 +171,14 @@ pub unsafe fn load_ioapic(madt: &'static MADT) -> Option<&'static IOAPIC> {
     while i < num_addr {
         let cur_addr = start.offset(i as isize);
         println!("Checking address {:x}", cur_addr as u32);
-        let cur_head = &*(*cur_addr as *const IntCtrlHeader);
+        let cur_head = &*(cur_addr as *const IntCtrlHeader_entry);
 
         println!("Type: {:x}, Len: {:x}",
                  cur_head.entry_type as u32,
                  cur_head.record_length as u32);
 
         if cur_head.entry_type == 0b01 {
-            return Some( &*(*cur_addr as *const IOAPIC) );
+            return Some( &*(*cur_addr as *const IOAPIC_entry) );
         } else {
             i += cur_head.record_length as u32;
         }
@@ -176,6 +186,10 @@ pub unsafe fn load_ioapic(madt: &'static MADT) -> Option<&'static IOAPIC> {
 
     return None;
 }
+
+
+
+
 
 
 
@@ -199,10 +213,10 @@ pub fn get_rsdt() -> u8 {
             println!("LCA: {:x}", madt.local_ctrl);
             println!("LCA: {:x}", madt.flags);
 
-            if let Some(ioapic) = unsafe { load_ioapic(madt) } {
+            if let Some(ioapic) = unsafe { load_ioapic_entry(madt) } {
                 println!("Loaded I/O APIC!");
                 println!("ID: {:x}, Address: {:x}, GSIB: {:x}",
-                        ioapic.id, ioapic.reserved, ioapic.address);
+                        ioapic.id, ioapic.address, ioapic.gsib);
             } else {
                 println!("Not loaded ioapic D:");
             }
