@@ -8,6 +8,20 @@ authors = ["Albin Stjerna <alst4459@student.uu.se>",
 [lib]
 crate-type = ["staticlib"]
 
+[features]
+
+# Used only to exclude part of code (eg. eh_personality et al.)
+# when compiling for unit tests. Call:
+# `cargo test --features tests`
+tests = []
+
+[[test]]
+# Setup for enabling critical functions for testing as we do not
+# have stdlib at hand. Thanks to x86 crate.
+name = "no_std_build"
+harness = false
+
+
 [dependencies]
 rlibc = "0.1.4"
 spin = "0.3.4"

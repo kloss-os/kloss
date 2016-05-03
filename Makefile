@@ -108,12 +108,14 @@ gdb:
 test: cargo_test sys_test
 
 cargo_test:
-	@echo "$(TEXT_RED)Not implemented$(TEXT_RESET)"
-#	@echo "$(TEXT_GREEN)■ ■ ■ ■ ■ ■$(TEXT_RED) ■$(TEXT_GREEN) ■$(TEXT_RESET)"
+	cargo test --features tests
+	@echo ""
+
 
 sys_test:
-	@echo "$(TEXT_RED)Not implemented$(TEXT_RESET)"
-
+	@echo "$(TEXT_RED)System tests Not implemented$(TEXT_RESET)"
+#	@echo "$(TEXT_GREEN)■ ■ ■ ■ ■ ■$(TEXT_RED) ■$(TEXT_GREEN) ■$(TEXT_RESET)
+	@echo ""
 
 # generate internal documentation
 dev_doc:
