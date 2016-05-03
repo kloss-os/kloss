@@ -134,7 +134,7 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("Ran {} recursive calls", call_recursively(10));
     println!("3! = {}", fac(3));
 
-        //memory::test_paging(&mut frame_allocator);
+    memory::test_paging(&mut frame_allocator);
 
     loop{}
 }
