@@ -80,6 +80,23 @@ pub struct IOAPIC_entry {
 
 }
 
+
+/// _I/O SAPIC_ (IOSAPIC), indicated by entry type 6
+#[repr(C, packed)]
+pub struct IOSAPIC_entry {
+    /// Universal header
+    header:   IntCtrlHeader_entry,
+    /// I/O APIC's ID
+    id:       u8,
+    /// Reserved, value is 0 (_padding?_)
+    reserved: u8,
+    /// I/O APIC's Address
+    address:  u32,
+    /// Global System Interrupt Base
+    gsib:     u64,
+
+}
+
 /// _Interrupt Source Override_, indicated by entry type 2
 #[repr(C, packed)]
 pub struct ISO_entry {
@@ -95,12 +112,6 @@ pub struct ISO_entry {
     flags:      u16,
 }
 
-
-
-/// The _actual_ IOAPIC, found using a MADT entry
-pub struct IOAPIC {
-    
-}
 
 
 
@@ -140,7 +151,6 @@ pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     // Step through the list until desired table is found
     for i in 0..num_ptr {
         let current = first.offset(i as isize);
-        println!("Checking address {:x}", *current);
         if  acpi_header::verify_struct(*current as usize) &&
             acpi_header::find_type(
                 acpi_header::load_acpisdt_header(
@@ -165,20 +175,15 @@ pub unsafe fn load_ioapic_entry(madt: &'static MADT) -> Option<&'static IOAPIC_e
                     - mem::size_of::<ACPISDTHeader>() as u32
                     - (4 + 4); // Remove size of descriptors
 
-    println!("Num addr {}", num_addr as u32);
+
     // Iterate over bound
     let mut i = 0;
     while i < num_addr {
         let cur_addr = start.offset(i as isize);
-        println!("Checking address {:x}", cur_addr as u32);
         let cur_head = &*(cur_addr as *const IntCtrlHeader_entry);
 
-        println!("Type: {:x}, Len: {:x}",
-                 cur_head.entry_type as u32,
-                 cur_head.record_length as u32);
-
         if cur_head.entry_type == 0b01 {
-            return Some( &*(*cur_addr as *const IOAPIC_entry) );
+            return Some( &*(cur_addr as *const IOAPIC_entry) );
         } else {
             i += cur_head.record_length as u32;
         }
@@ -187,10 +192,80 @@ pub unsafe fn load_ioapic_entry(madt: &'static MADT) -> Option<&'static IOAPIC_e
     return None;
 }
 
+/// Get the I/O SAPIC
+pub unsafe fn load_iosapic_entry(madt: &'static MADT) -> Option<&'static IOSAPIC_entry> {
+    // Get first byte address
+    let start: *const u8 = &madt.first_intctr;
+
+    // Get amount of bytes in bound
+    let num_addr = madt.header.length
+                    - mem::size_of::<ACPISDTHeader>() as u32
+                    - (4 + 4); // Remove size of descriptors
 
 
+    // Iterate over bound
+    let mut i = 0;
+    while i < num_addr {
+        let cur_addr = start.offset(i as isize);
+        let cur_head = &*(cur_addr as *const IntCtrlHeader_entry);
+
+        if cur_head.entry_type == 0x06 {
+            return Some( &*(*cur_addr as *const IOSAPIC_entry) );
+        } else {
+            i += cur_head.record_length as u32;
+        }
+    }
+
+    return None;
+}
+
+/// Print MADT table
+pub unsafe fn print_madt(madt: &'static MADT) {
+    println!("MADT data:");
+    println!("Length: 0x{:x}", madt.header.length);
+    println!("LCA: 0x{:x}", madt.local_ctrl);
+    println!("Flags: 0x{:x}", madt.flags);
+
+    // Get first byte address
+    let start: *const u8 = &madt.first_intctr;
+
+    // Get amount of bytes in bound
+    let num_addr = madt.header.length
+                    - mem::size_of::<ACPISDTHeader>() as u32
+                    - (4 + 4); // Remove size of descriptors
 
 
+    // Iterate over bound
+    let mut i = 0;
+    while i < num_addr {
+        let cur_addr = start.offset(i as isize);
+        let cur_head = &*(cur_addr as *const IntCtrlHeader_entry);
+
+        println!("Type: 0x{:x}, Len: 0x{:x} at address 0x{:x}",
+                 cur_head.entry_type as u32,
+                 cur_head.record_length as u32,
+                 cur_addr as u32);
+
+        i += cur_head.record_length as u32;
+    }
+}
+
+
+pub unsafe fn print_ioreg(addr: u32) {
+    let base_msr: u32 = 0x1b;
+    let seg: u32 = (addr & 0xFFFFF100) | 0x800;
+    //let off: u32 = (addr >> 32) & 0x0f;
+    let off: u32 = 0;
+    asm!("wrmsr"
+         :
+         : "{eax}"(seg),"{ecx}"(base_msr),"{edx}"(off)
+         : "{eax}","{ecx}","{edx}"
+         : "intel" );
+    let ioregsel = &*(addr as *const u16);
+    //let iowin    = &*((addr + 0x10) as *const u32);
+    println!("IOREGSEL: 0x{:x}", ioregsel);
+    //println!("IOWIN: 0x{:x}", iowin);
+}
 
 
 
@@ -205,18 +280,27 @@ pub unsafe fn load_ioapic_entry(madt: &'static MADT) -> Option<&'static IOAPIC_e
 pub fn get_rsdt() -> u8 {
 
     if let Some(rsdt) = load_rsdt() {
-        println!("Loaded rsdt, length is 0x{:x}!", rsdt.header.length);
+        println!("Loaded RSDT, length is 0x{:x}!", rsdt.header.length);
 
-        if let Some(madt) = unsafe { load_madt(rsdt) } {
-            println!("Loaded madt!");
-            println!("Length: {:x}", madt.header.length);
-            println!("LCA: {:x}", madt.local_ctrl);
-            println!("LCA: {:x}", madt.flags);
-
-            if let Some(ioapic) = unsafe { load_ioapic_entry(madt) } {
-                println!("Loaded I/O APIC!");
+        if let Some(madt) = unsafe { load_madt(&rsdt) } {
+            println!("Loaded MADT");
+            unsafe { print_madt(&madt); }
+            
+            if let Some(iosapic) = unsafe { load_iosapic_entry(&madt) } {
+                println!("Loaded I/O SAPIC!");
                 println!("ID: {:x}, Address: {:x}, GSIB: {:x}",
-                        ioapic.id, ioapic.address, ioapic.gsib);
+                        iosapic.id, iosapic.address, iosapic.gsib);
+
+            } else {
+                println!("Not loaded iosapic D:");
+            }
+
+            if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
+                println!("Loaded I/O APIC!");
+                println!("ID: {:x}, Address: {:x}, Reserved {:x}, GSIB: {:x}",
+                        ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
+
+                unsafe { print_ioreg(ioapic.address); }
             } else {
                 println!("Not loaded ioapic D:");
             }

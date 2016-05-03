@@ -39,7 +39,6 @@ pub unsafe fn load_acpisdt_header(address: usize) -> &'static ACPISDTHeader {
 unsafe fn sum_bytes(start: usize, len: usize) -> u8 {
     let mut sum: u32 = 0;
 
-    println!("current length: {:x}", len);
     for i in start..(start + len) {
         let current: u32 = *(i as *const u32) & 0xFF;
         sum = (sum + current) & 0xFF;
@@ -56,9 +55,11 @@ pub fn find_type(header: &'static ACPISDTHeader) -> Option<SDTtype> {
         [(b"RSDT", SDTtype::RSDT),
          (b"APIC", SDTtype::MADT)];
 
+    /*
     for i in header.signature.iter() {
         println!("SIG {}", *i as char);
     }
+    */
 
     for &(sig,sdtt) in sdt_sig.iter() {
         if sig.iter()
