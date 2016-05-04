@@ -32,6 +32,8 @@ impl TemporaryPage {
     
     /// Maps the temporary page to the given page table frame in the active table
     /// Returns a reference to the now mapped table.
+    /// It is returned as a Level 1 table just because a Level 1 can't be caled
+    /// with 'next_table' due to the recursive mapping.
     pub fn map_table_frame(&mut self,
     frame: Frame,
     active_table: &mut RecursivePageTable)
