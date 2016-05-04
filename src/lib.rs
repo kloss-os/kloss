@@ -13,6 +13,7 @@ extern crate multiboot2;
 
 extern {
     fn general_interrupt_handler();
+    fn general_exception_handler();
 }
 
 #[macro_use]
@@ -85,8 +86,6 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         multiboot_start,
         multiboot_end,
         memory_map_tag.memory_areas());
-
-    memory::test_paging(&mut frame_allocator);
 /*
     // Try allocating _all available frames_.
     for i in 0.. {
@@ -105,16 +104,54 @@ pub extern fn rust_main(multiboot_information_address: usize) {
                     | idt::FLAG_DPL_KERNEL_MODE
                     | idt::FLAG_GATE_ENABLED;
 
-        idt::idt_set_gate(42, general_interrupt_handler,
-                          idt::SELECT_TARGET_PRIV_1, flags);
+
+        // Install interrupt handlers for *everything*!
+        for ev in 0..33 {
+            idt::idt_set_gate(ev, general_exception_handler,
+                              idt::SELECT_TARGET_PRIV_1, flags);
+        }
+
+        for iv in 33..256 {
+            idt::idt_set_gate(iv, general_interrupt_handler,
+                              idt::SELECT_TARGET_PRIV_1, flags);
+        }
 
         // Test out interrupts
+        // for iv in 0..256 {
+        //     println!("Sending interrupt #{}", iv);
+        //     asm!("int 42" ::::"intel");
+        // }
+        // asm!("int 42" ::::"intel");
+        // asm!("int 42" ::::"intel");
+
         asm!("int 42" ::::"intel");
-        asm!("int 42" ::::"intel");
-        asm!("int 42" ::::"intel");
+
+        // Enable global interrupts!
+        asm!("sti" ::::"intel");
+
     }
 
+    println!("Ran {} recursive calls", call_recursively(10));
+    println!("3! = {}", fac(3));
+
+    memory::test_paging(&mut frame_allocator);
+
     loop{}
+}
+
+fn call_recursively(n: u64) -> u64 {
+    match n {
+        0 => 0,
+        _ => 1 + call_recursively(n-1)
+    }
+}
+
+fn fac(n: u64) -> u64 {
+    match n {
+        0 => 1,
+        1 => 1,
+        _ => n * fac(n-1)
+    }
 }
 
 /// This is an override for a language feature. Don't know what it does.
@@ -139,4 +176,9 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 pub extern fn rust_interrupt_handler() {
 
     println!("Handled interrupt!");
+}
+
+#[no_mangle]
+pub extern fn rust_exception_handler() {
+    println!("Handled exception!");
 }
