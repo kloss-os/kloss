@@ -1,6 +1,7 @@
 
 use self::acpi_header::ACPISDTHeader;
 use core::mem;
+use core::intrinsics::{volatile_load, volatile_store};
 
 mod acpi_header;
 mod rsdp;
@@ -252,18 +253,21 @@ pub unsafe fn print_madt(madt: &'static MADT) {
 
 
 pub unsafe fn print_ioreg(addr: u32) {
-    let base_msr: u32 = 0x1b;
-    let seg: u32 = (addr & 0xFFFFF100) | 0x800;
+    //let base_msr: u32 = 0x1b;
+    //let seg: u32 = addr >> 1;
+    //let seg: u32 = (addr & 0xFFFFF100) | 0x800;
     //let off: u32 = (addr >> 32) & 0x0f;
-    let off: u32 = 0;
-    asm!("wrmsr"
-         :
-         : "{eax}"(seg),"{ecx}"(base_msr),"{edx}"(off)
-         : "{eax}","{ecx}","{edx}"
-         : "intel" );
-    let ioregsel = &*(addr as *const u16);
+    //let off: u32 = 0;
+    //asm!("wrmsr"
+    //     :
+    //     : "{eax}"(seg),"{ecx}"(base_msr),"{edx}"(off)
+    //     : "{eax}","{ecx}","{edx}"
+    //     : "intel" );
+    let ioapic = addr as *mut u32;
+    let ioregsel = volatile_load(ioapic);
+    //let ioregsel = *(addr as *const u32);
     //let iowin    = &*((addr + 0x10) as *const u32);
-    println!("IOREGSEL: 0x{:x}", ioregsel);
+    //println!("IOREGSEL: 0x{:x}", ioregsel);
     //println!("IOWIN: 0x{:x}", iowin);
 }
 
@@ -271,6 +275,18 @@ pub unsafe fn print_ioreg(addr: u32) {
 
 
 
+unsafe fn check_cpuid() {
+    let cpuid_input: u32 = 0x1;
+    let mut cpuid_output: u32;
+    asm!("cpuid"
+         : "={ecx}"(cpuid_output)
+         : "{eax}"(cpuid_input)
+         : "{eax}","{ecx}"
+         : "intel" );
+
+    println!("CPUID: 0x{:x}", cpuid_output);
+
+}
 
 
 
@@ -286,21 +302,13 @@ pub fn get_rsdt() -> u8 {
             println!("Loaded MADT");
             unsafe { print_madt(&madt); }
             
-            if let Some(iosapic) = unsafe { load_iosapic_entry(&madt) } {
-                println!("Loaded I/O SAPIC!");
-                println!("ID: {:x}, Address: {:x}, GSIB: {:x}",
-                        iosapic.id, iosapic.address, iosapic.gsib);
-
-            } else {
-                println!("Not loaded iosapic D:");
-            }
-
             if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
                 println!("Loaded I/O APIC!");
                 println!("ID: {:x}, Address: {:x}, Reserved {:x}, GSIB: {:x}",
                         ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
 
-                unsafe { print_ioreg(ioapic.address); }
+                //unsafe { print_ioreg(ioapic.address); }
+                unsafe { check_cpuid(); }
             } else {
                 println!("Not loaded ioapic D:");
             }

@@ -16,7 +16,6 @@ start:
         call check_multiboot
         call check_cpuid
         call check_long_mode
-        call check_apic
 
         call set_up_page_tables
         call enable_paging

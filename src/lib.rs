@@ -6,6 +6,7 @@
 #![feature(unique)]
 
 #![feature(asm)]
+#![feature(core_intrinsics)]
 
 extern crate rlibc;
 extern crate spin;
