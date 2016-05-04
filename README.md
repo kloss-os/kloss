@@ -21,7 +21,8 @@ På Ubuntu (LTS) motsvarar det följande: `sudo apt-get install quemu xorriso gr
 
 Gör så här:
 1. Installera senaste nightlyn av Rust m.h.a. multirust: `multirust override nightly`.
-2. `make run` bygger en bootbar ISO med kärnan och kör den i QEMU
+2. Installera en patchad version av libcore: `make libcore_install`.
+3. `make run` bygger en bootbar ISO med kärnan och kör den i QEMU
 
 ## Testa
 ![Pooh Assembly]

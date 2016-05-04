@@ -14,3 +14,5 @@
 
 # Custom GDB
 rust-os-gdb
+/libcore/
+/rustc-nightly-src.tar.gz

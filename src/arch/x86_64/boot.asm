@@ -202,7 +202,8 @@ p3_table:
 p2_table:
     resb 4096
 stack_bottom:
-    resb 4096
+        ;; Reserve 2 MB stack.
+    resb 16384
 stack_top:
 
 ;;; This is the global descriptor table. We need to set it up to be in
