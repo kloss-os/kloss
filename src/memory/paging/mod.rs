@@ -10,14 +10,18 @@ pub use self::entry::*;
 ///FrameAllocator is the method used to create Frames from Pages
 use memory::{PAGE_SIZE, Frame, FrameAllocator}; // needed later
 use self::table::{Table, Level4};
+pub use self::mapper::Mapper;
 use core::ptr::Unique;
+use core::ops::{Deref, DerefMut};
+use self::temporary_page::TemporaryPage;
+use multiboot2::BootInformation;
 
 //use self::paging::PhysicalAddress;
 //use self::entry::HUGE_PAGE;
 
 mod entry;
 mod table;
-
+mod mapper;
 ///Used to temporary map a frame to virtyal address
 mod temporary_page;
 
@@ -69,6 +73,163 @@ impl Page {
 
 }
 
+pub struct ActivePageTable {
+    mapper: Mapper,
+}
+
+
+impl Deref for ActivePageTable {
+    type Target = Mapper;
+
+    fn deref(&self) -> &Mapper {
+        &self.mapper
+    }
+}
+
+
+impl DerefMut for ActivePageTable {
+    fn deref_mut(&mut self) -> &mut Mapper {
+        &mut self.mapper
+    }
+}
+
+impl ActivePageTable {
+    unsafe fn new() -> ActivePageTable {
+        ActivePageTable {
+            mapper: Mapper::new(),
+        }
+    }
+    pub fn with<F>(&mut self,
+                   table: &mut InactivePageTable,
+                   f: F)
+        where F: FnOnce(&mut Mapper)
+    {
+        use x86::{controlregs, tlb};
+        let flush_tlb = || unsafe { tlb::flush_all() };
+        
+        {
+            let backup = Frame::containing_address (
+                unsafe { controlregs::cr3() } as usize);
+            
+            // map temporary_page to current p4 table
+            let p4_table = temporary_page.map_table_frame(backup.clone(), self);
+            
+            // overwrite recursive mapping
+            self.p4_mut()[511].set(table.p4_frame.clone(), PRESENT | WRITABLE);
+            flush_tlb();
+            
+            // execute f in the new context
+            f(self);
+            
+            // restore recursive mapping to original p4 table
+            p4_table[511].set(backup, PRESENT | WRITABLE);
+            flush_tlb();
+        }
+        
+        temporary_page.unmap(self);
+    }
+    
+    pub fn switch(&mut self, new_table: InactivePageTable) -> InactivePageTable {
+        use x86::controlregs;
+        
+        let old_table = InactivePageTable {
+            p4_frame: Frame::containing_address(unsafe { controlregs::cr3() } as usize),
+        };
+        unsafe {
+            controlregs::cr3_write(new_table.p4_frame.start_address() as u64);
+        }
+        old_table
+    }
+}
+
+
+
+
+pub struct InactivePageTable {
+    p4_frame: Frame,
+}
+/// Creates valid, inactive page tables that are zeroed and recursively maped.
+impl InactivePageTable {
+    pub fn new(frame: Frame,
+               active_table: &mut ActivePageTable,
+               temporary_page: &mut TemporaryPage)
+               -> InactivePageTable {
+        {
+            
+            // The 'active_table' and 'temporary_table' arguments needs to 
+            // be in a inner scope to ensure shadowing since the table 
+            // variable exclusively borrows temporary_page as long as it's alive
+            let table = temporary_page.map_table_frame(frame.clone(),
+            active_table);
+            // Zeroing table is done here *duh*
+            table.zero();
+            // Recursive mapping for the table
+            table[511].set(frame.clone(), PRESENT | WRITABLE);
+        }
+        temporary_page.unmap(active_table);
+
+        InactivePageTable {p4_frame: frame } 
+    }
+}
+
+pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
+    where A: FrameAllocator
+{
+    //
+    let mut temporary_page = TemporaryPage::new(Page { number: 0xcafebabe },
+                                                allocator);
+    let mut active_table = unsafe { ActivePageTable::new() };
+    let mut new_table = {
+        let frame = allocator.allocate_frame().expect("no more frames");
+        InactivePageTable::new(frame, &mut active_table, &mut temporary_page)
+    };
+    active_table.with(&mut new_table, &mut temporary_page, |mapper| {
+        let elf_sections_tag = boot_info.elf_sections_tag()
+            .expect("Memmort map tag required");
+        for section in elf_sections_tag.sections() {
+            //TODO mapper.identity_map() all pages of 'section'
+        }
+    });
+}
+
+
+
+
+
+/// Basic tresting of different page table levels and allocations as well as mapping specific bits in specific levels
+pub fn test_paging<A>(allocator: &mut A)
+    where A: FrameAllocator
+{
+        let mut page_table = unsafe { ActivePageTable::new() };
+
+    // test translate
+    println!("Some = {:?}", page_table.translate(0));
+    println!("Some = {:?}", page_table.translate(4096)); // second P1 entry
+    println!("Some = {:?}", page_table.translate(512 * 4096)); // second P2 entry
+    println!("Some = {:?}", page_table.translate(300 * 512 * 4096)); // 300th P2 entry
+    println!("None = {:?}", page_table.translate(512 * 512 * 4096)); // second P3 entry
+    println!("Some = {:?}", page_table.translate(512 * 512 * 4096 - 1)); // last mapped byte
+
+    // test map_to
+    let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
+    let page = Page::containing_address(addr);
+    let frame = allocator.allocate_frame().expect("no more frames");
+    println!("None = {:?}, map to {:?}",
+             page_table.translate(addr),
+             frame);
+    page_table.map_to(page, frame, EntryFlags::empty(), allocator);
+    println!("Some = {:?}", page_table.translate(addr));
+    println!("next free frame: {:?}", allocator.allocate_frame());
+
+    // test unmap
+    println!("{:#x}",
+             unsafe { *(Page::containing_address(addr).start_address() as *const u64) });
+    page_table.unmap(Page::containing_address(addr), allocator);
+    println!("None = {:?}", page_table.translate(addr));
+}
+
+
+/*
 /// A struct to save the first pice of the address.
 pub struct RecursivePageTable {
     p4: Unique<Table<Level4>>,
@@ -79,6 +240,23 @@ pub struct RecursivePageTable {
 impl RecursivePageTable {
     pub unsafe fn new() -> RecursivePageTable {
         RecursivePageTable { p4: Unique::new(table::P4) }
+    }
+    // This overwrites the 511th P4 entry and points it to the inactive table frame. and then flushes the TLB.
+    pub fn with<F>(&mut self,
+                   table: &mut InactivePageTable,
+                   f: F)
+        where F: FnOnce(&mut RecursivePageTable)
+    {
+        use x86::tlb;
+        let flush_tlb = || unsafe { tlb::flush_all() };
+        
+        // overwrite recursive mapping
+        self.p4_mut()[511].set(table.p4_frame.clone(), PRESENT |WRITABLE);
+        flush_tlb();
+        // execute f in the new context
+        f(self);
+        
+        //TODO restore recursive mapping to original p4 table
     }
 
     fn p4(&self) -> &Table<Level4>{
@@ -202,47 +380,6 @@ impl RecursivePageTable {
     }
 
 }
+*/
 
-
-/// InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU
-pub struct InactivePageTable {
-    p4_frame: Frame,
-}
-
-impl InactivePageTable {
-    pub fn new(frame: Frame) -> InactivePageTable {
-        //TODO zero and recursive map the frame
-        InactivePageTable {p4_frame: frame } 
-    }
-}
-/// Basic tresting of different page table levels and allocations as well as mapping specific bits in specific levels
-pub fn test_paging<A>(allocator: &mut A)
-    where A: FrameAllocator
-{
-        let mut page_table = unsafe { RecursivePageTable::new() };
-
-    // test translate
-    println!("Some = {:?}", page_table.translate(0));
-    println!("Some = {:?}", page_table.translate(4096)); // second P1 entry
-    println!("Some = {:?}", page_table.translate(512 * 4096)); // second P2 entry
-    println!("Some = {:?}", page_table.translate(300 * 512 * 4096)); // 300th P2 entry
-    println!("None = {:?}", page_table.translate(512 * 512 * 4096)); // second P3 entry
-    println!("Some = {:?}", page_table.translate(512 * 512 * 4096 - 1)); // last mapped byte
-
-    // test map_to
-    let addr = 42 * 512 * 512 * 4096; // 42th P3 entry
-    let page = Page::containing_address(addr);
-    let frame = allocator.allocate_frame().expect("no more frames");
-    println!("None = {:?}, map to {:?}",
-             page_table.translate(addr),
-             frame);
-    page_table.map_to(page, frame, EntryFlags::empty(), allocator);
-    println!("Some = {:?}", page_table.translate(addr));
-    println!("next free frame: {:?}", allocator.allocate_frame());
-
-    // test unmap
-    println!("{:#x}",
-             unsafe { *(Page::containing_address(addr).start_address() as *const u64) });
-    page_table.unmap(Page::containing_address(addr), allocator);
-    println!("None = {:?}", page_table.translate(addr));
-}
+// InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU
