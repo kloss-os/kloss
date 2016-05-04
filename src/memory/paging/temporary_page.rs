@@ -7,7 +7,7 @@
 /// 
 /// The already implemented memory::FrameAllocator is used to make the allocation hapen.
 
-use super::{Page, RecursivePageTable, VirtualAddress};
+use super::{Page, ActivePageTable, VirtualAddress};
 use memory::{Frame, FrameAllocator};
 use super::table::{Table, Level1};
 
@@ -18,9 +18,17 @@ pub struct TemporaryPage {
 } 
 
 impl TemporaryPage {
+    pub fn new<A>(page: Page, allocator: &mut A) -> TemporaryPage
+        where A: FrameAllocator
+    {
+        TemporaryPage {
+            page: page,
+            allocator: TinyAllocator::new(allocator),
+        }
+    }
     /// Maps the temporary page to the given frame in the active table.
     /// Returns the start address of the temporary page.
-    pub fn map(&mut self, frame: Frame, active_table: &mut RecursivePageTable)
+    pub fn map(&mut self, frame: Frame, active_table: &mut ActivePageTable)
                -> VirtualAddress{
             use super::entry::WRITABLE;
             
@@ -32,16 +40,16 @@ impl TemporaryPage {
     
     /// Maps the temporary page to the given page table frame in the active table
     /// Returns a reference to the now mapped table.
-    /// It is returned as a Level 1 table just because a Level 1 can't be caled
-    /// with 'next_table' due to the recursive mapping.
+    /// It is returned as a Level 1 table just because a Level 1 can't be called
+    /// with 'next_table' due to the nature recursive mapping.
     pub fn map_table_frame(&mut self,
     frame: Frame,
-    active_table: &mut RecursivePageTable)
+    active_table: &mut ActivePageTable)
         -> &mut Table<Level1> {
         unsafe { &mut *(self.map(frame, active_table) as *mut Table<Level1>) }
     }
     /// Unmaps the temporary page in th active table.
-    pub fn unmap(&mut self, active_table: &mut RecursivePageTable){
+    pub fn unmap(&mut self, active_table: &mut ActivePageTable){
         active_table.unmap(self.page, &mut self.allocator)
     }
 }
