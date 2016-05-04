@@ -131,6 +131,10 @@ check_apic:
 ;;; End snippets from OSDev Wiki ;;;
 
 set_up_page_tables:
+        ;; Recursive p4 table
+        mov eax, p4_table
+        or eax, 0b11            ; present + writable
+        mov [p4_table + 511 * 8], eax
         ;; map first P4 entry to P3 table
         mov eax, p3_table
         or eax, 0b11 ; present + writable
@@ -206,18 +210,18 @@ set_up_SSE:
 
 ;;; Reserve some space for a (very minimal) stack.
 section .bss
-align 8192
+align 4096
+
 p4_table:
-    resb 8192
+    resb 4096
 p3_table:
-    resb 8192
+    resb 4096
 p2_table:
-    resb 8192
+    resb 4096
 stack_bottom:
-    resb 8192
+        ;; Reserve 2 MB stack.
+    resb 16384
 stack_top:
-
-
 
 ;;; This is the global descriptor table. We need to set it up to be in
 ;;; real long mode. Basically, it's yet another piece of weird assembler

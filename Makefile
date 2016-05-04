@@ -1,6 +1,6 @@
-# FLAGSc
+# FLAGS
 arch ?= x86_64
-target ?= $(arch)-unknown-linux-gnu
+target ?= $(arch)-unknown-none-gnu
 
 # PATHS
 kernel := build/kernel-$(arch).bin
@@ -70,10 +70,11 @@ all: $(kernel)
 
 clean:
 	rm -rf build
+	rm -rf libcore rustc-nightly-src.tar.gz
 	rm -rf target
 
 run: $(iso)
-	qemu-system-x86_64 -cdrom $(iso) -s
+	qemu-system-x86_64 -cdrom $(iso) -s -d int -no-reboot
 
 iso: $(iso)
 
@@ -88,7 +89,8 @@ $(kernel): cargo $(rust_os) $(assembly_object_files) $(linker_script)
 	ld -n --gc-sections -T $(linker_script) -o $(kernel) $(assembly_object_files) $(rust_os)
 
 cargo:
-	@cargo rustc --target $(target) -- -Z no-landing-pads
+
+	@cargo rustc --target $(target) -- -Z no-landing-pads -C no-redzone
 
 # compile assembly files
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
@@ -103,16 +105,36 @@ debug: $(iso)
 gdb:
 	@rust-os-gdb/bin/rust-gdb $(kernel) -ex "target remote :1234"
 
-test: cargo_test sys_test 
+test: cargo_test sys_test
 
 cargo_test:
-	@echo "$(TEXT_RED)Not implemented$(TEXT_RESET)"
-#	@echo "$(TEXT_GREEN)■ ■ ■ ■ ■ ■$(TEXT_RED) ■$(TEXT_GREEN) ■$(TEXT_RESET)"
+	cargo test --features tests
+	@echo ""
+
 
 sys_test:
-	@echo "$(TEXT_RED)Not implemented$(TEXT_RESET)"
-
+	@echo "$(TEXT_RED)System tests Not implemented$(TEXT_RESET)"
+#	@echo "$(TEXT_GREEN)■ ■ ■ ■ ■ ■$(TEXT_RED) ■$(TEXT_GREEN) ■$(TEXT_RESET)
+	@echo ""
 
 # generate internal documentation
 dev_doc:
 	cargo rustdoc -- --no-defaults --passes strip-hidden --passes collapse-docs --passes unindent-comments --passes strip-priv-imports
+
+
+# Build and install a patched libcore:
+
+rustc-nightly-src.tar.gz:
+	curl https://static.rust-lang.org/dist/rustc-nightly-src.tar.gz -o rustc-nightly-src.tar.gz
+
+libcore_install: libcore/lib.rs
+	mkdir -p build
+	mkdir -p ~/.multirust/toolchains/nightly/lib/rustlib/$(target)/lib/
+	rustc --target $(target) -Z no-landing-pads \
+	    --cfg disable_float \
+	    --out-dir ~/.multirust/toolchains/nightly/lib/rustlib/$(target)/lib \
+	    libcore/lib.rs
+
+libcore/lib.rs: rustc-nightly-src.tar.gz libcore_nofp.patch
+	tar -xmf rustc-nightly-src.tar.gz rustc-nightly/src/libcore --transform 's~^rustc-nightly/src/~~'
+	patch -p0 < libcore_nofp.patch

@@ -4,6 +4,7 @@
 
 #![feature(const_fn)]
 #![feature(unique)]
+#![feature(asm)]
 
 #![feature(asm)]
 #![feature(core_intrinsics)]
@@ -12,13 +13,23 @@ extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
 
+
+extern {
+    fn general_interrupt_handler();
+    fn general_exception_handler();
+}
+
+#[macro_use]
+extern crate bitflags;
+extern crate x86;
+
 #[macro_use]
 #[doc(inline)]
 mod vga_buffer;
-
 mod memory;
 
 mod acpi;
+mod idt;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -79,9 +90,12 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
     // Set up a frame allocator.
     let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize, kernel_end as usize, multiboot_start,
-        multiboot_end, memory_map_tag.memory_areas());
-
+        kernel_start as usize,
+        kernel_end as usize,
+        multiboot_start,
+        multiboot_end,
+        memory_map_tag.memory_areas());
+/*
     // Try allocating _all available frames_.
     for i in 0.. {
         use memory::FrameAllocator;
@@ -90,13 +104,67 @@ pub extern fn rust_main(multiboot_information_address: usize) {
             break;
         }
     }
+    */
+
+    println!("Setting up the IDT!");
+    unsafe{
+        idt::idt_install();
+        let flags =   idt::FLAG_TYPE_TRAP_GATE
+                    | idt::FLAG_DPL_KERNEL_MODE
+                    | idt::FLAG_GATE_ENABLED;
 
 
+        // Install interrupt handlers for *everything*!
+        for ev in 0..33 {
+            idt::idt_set_gate(ev, general_exception_handler,
+                              idt::SELECT_TARGET_PRIV_1, flags);
+        }
+
+        for iv in 33..256 {
+            idt::idt_set_gate(iv, general_interrupt_handler,
+                              idt::SELECT_TARGET_PRIV_1, flags);
+        }
+
+        // Test out interrupts
+        // for iv in 0..256 {
+        //     println!("Sending interrupt #{}", iv);
+        //     asm!("int 42" ::::"intel");
+        // }
+        // asm!("int 42" ::::"intel");
+        // asm!("int 42" ::::"intel");
+
+        asm!("int 42" ::::"intel");
+
+        // Enable global interrupts!
+        asm!("sti" ::::"intel");
+
+    }
+
+    println!("Ran {} recursive calls", call_recursively(10));
+    println!("3! = {}", fac(3));
+
+    memory::test_paging(&mut frame_allocator);
 
     loop{}
 }
 
+fn call_recursively(n: u64) -> u64 {
+    match n {
+        0 => 0,
+        _ => 1 + call_recursively(n-1)
+    }
+}
+
+fn fac(n: u64) -> u64 {
+    match n {
+        0 => 1,
+        1 => 1,
+        _ => n * fac(n-1)
+    }
+}
+
 /// This is an override for a language feature. Don't know what it does.
+#[cfg(not(feature = "tests"))]
 #[lang = "eh_personality"]
 extern fn eh_personality() {}
 
@@ -104,10 +172,22 @@ extern fn eh_personality() {}
 /// something crashes. This version displays PANIC and a description of
 /// where the panic occurred.  Try invoking the panic!(); macro to see
 /// it in action.
+#[cfg(not(feature = "tests"))]
 #[lang = "panic_fmt"]
 extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     println!("\n\nPANIC in {} at line {}:", file, line);
     println!("    {}", fmt);
 
     loop{}
+}
+
+#[no_mangle]
+pub extern fn rust_interrupt_handler() {
+
+    println!("Handled interrupt!");
+}
+
+#[no_mangle]
+pub extern fn rust_exception_handler() {
+    println!("Handled exception!");
 }
