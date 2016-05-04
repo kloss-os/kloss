@@ -4,6 +4,8 @@
 /meta/**/*.log
 /meta/**/*.pdf
 /meta/**/*.fls
+/meta/**/*.bbl
+/meta/**/*.blg
 
 /build/*
 /Cargo.lock
