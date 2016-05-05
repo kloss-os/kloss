@@ -24,8 +24,8 @@ extern crate x86;
 #[doc(inline)]
 mod vga_buffer;
 mod memory;
-
 mod idt;
+mod arch;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -135,6 +135,21 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         // Enable global interrupts!
         asm!("sti" ::::"intel");
 
+        // TESTING CPUID MODULE
+        use arch::x86_64::cpuid;
+
+        let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
+        let result = m_cpuid.get(0x0000000);
+        match result {
+            // Got an answer
+            Some(ans) => {
+                let (a,b,c,d) = ans;
+                println!("\nCPUID:");
+                println!("  eax: 0x{:x}\n  ebx: 0x{:x}\n  ecx: 0x{:x}\n  edx: 0x{:x}\n", a,b,c,d);
+            },
+            // Exceeded available options
+            None      => println!("\nCPUID:\n    None\n")
+        }
     }
 
     println!("Ran {} recursive calls", call_recursively(10));
