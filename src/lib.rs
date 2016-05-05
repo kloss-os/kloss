@@ -16,6 +16,8 @@ extern {
     fn general_exception_handler();
     fn null_interrupt_handler();
     fn isr_42();
+    fn isr_255();
+    fn isr_12();
 }
 
 #[macro_use]
@@ -129,10 +131,14 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
         idt::idt_set_gate(42, isr_42,
                           idt::SELECT_TARGET_PRIV_1, flags);
+        idt::idt_set_gate(12, isr_12,
+                          idt::SELECT_TARGET_PRIV_1, flags);
+        idt::idt_set_gate(255, isr_255,
+                          idt::SELECT_TARGET_PRIV_1, flags);
 
         asm!("int 42" ::::"intel");
-        asm!("int 42" ::::"intel");
-        asm!("int 42" ::::"intel");
+        asm!("int 12" ::::"intel");
+        asm!("int 255" ::::"intel");
         //int!(42);
 
         // Enable global interrupts!

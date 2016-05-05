@@ -69,11 +69,19 @@ isr_%1
         iretq
 %endmacro
 
-;;; Define a set of interrupt handlers
-def_interrupt_handler 42, rust_interrupt_handler
+;;; Define a set of exception handlers for interrupts 0-31
+%assign i 0
+%rep 32
+        def_interrupt_handler i, rust_interrupt_handler
+%assign i i+1                   ; i++
+%endrep
 
-;;; Define a set of exception handlers
-
+;;; Define a set of interrupt handlers using the rep macro
+;;; Numbers 32--255
+%rep 256-32
+        def_interrupt_handler i, rust_interrupt_handler
+%assign i i+1                   ; i++
+%endrep
 
 ;;; General (do-nothing) handlers:
 general_exception_handler:
