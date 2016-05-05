@@ -143,6 +143,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     memory::test_paging(&mut frame_allocator);
     
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
+    
+    // Denna skit är tveksam
     //frame_allocator.allocate_frame();
     
     println!("It did not crash!");
