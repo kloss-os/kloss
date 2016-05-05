@@ -145,8 +145,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
     //frame_allocator.allocate_frame();
     
-    memory::remap_the_kernel(&mut frame_allocator, boot_info);
-    frame_allocator.allocate_frame();
     println!("It did not crash!");
     
 
