@@ -81,7 +81,6 @@ impl FrameAllocator for TinyAllocator {
         None
     }
 
-
     fn deallocate_frame(&mut self, frame: Frame) {
         // Puts the frame back into the first free slot.
         for frame_option in &mut self.0{

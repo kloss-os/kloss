@@ -91,6 +91,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     enable_write_protect_bit();
 
     /*
+    memory::test_paging(&mut frame_allocator);
+
     // Try allocating _all available frames_.
     for i in 0.. {
         use memory::FrameAllocator;
@@ -142,19 +144,22 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
     //frame_allocator.allocate_frame();
+    
+    memory::remap_the_kernel(&mut frame_allocator, boot_info);
+    frame_allocator.allocate_frame();
     println!("It did not crash!");
     
 
     loop{}
 }
-
+// TODO: Skall dett vara kvar??
 fn call_recursively(n: u64) -> u64 {
     match n {
         0 => 0,
         _ => 1 + call_recursively(n-1)
     }
 }
-
+// TODO: Skall detta vara kvar 
 fn fac(n: u64) -> u64 {
     match n {
         0 => 1,
