@@ -33,7 +33,7 @@ mod idt;
 /// Note how the multiboot data is passed in from a raw pointer (usize),
 /// via the assembler parts.
 #[no_mangle]
-pub extern fn rust_main(multiboot_information_address: usize) {
+pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
@@ -86,6 +86,11 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         multiboot_start,
         multiboot_end,
         memory_map_tag.memory_areas());
+
+    enable_nxe_bit();
+    enable_write_protect_bit();
+
+    memory::test_paging(&mut frame_allocator);
 /*
     // Try allocating _all available frames_.
     for i in 0.. {
@@ -135,6 +140,11 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("3! = {}", fac(3));
 
     memory::test_paging(&mut frame_allocator);
+    
+    memory::remap_the_kernel(&mut frame_allocator, boot_info);
+    frame_allocator.allocate_frame();
+    println!("It did not crash!");
+    
 
     loop{}
 }
@@ -152,6 +162,20 @@ fn fac(n: u64) -> u64 {
         1 => 1,
         _ => n * fac(n-1)
     }
+fn enable_nxe_bit() {
+    use x86::msr::{IA32_EFER, rdmsr, wrmsr};
+    
+    let nxe_bit = 1 << 11;
+    unsafe {
+        let efer = rdmsr(IA32_EFER);
+        wrmsr(IA32_EFER, efer | nxe_bit);
+    }
+}
+
+fn enable_write_protect_bit() {
+    use x86::controlregs::{cr0, cr0_write};
+    let wp_bit = 1 << 16;
+    unsafe { cr0_write(cr0() | wp_bit) };
 }
 
 /// This is an override for a language feature. Don't know what it does.

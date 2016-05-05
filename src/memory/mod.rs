@@ -6,7 +6,8 @@ pub use self::area_frame_allocator::AreaFrameAllocator;
 
 /// Include `PhysicalAddress`
 use self::paging::PhysicalAddress;
-pub use self::paging::test_paging;
+pub use self::paging::{test_paging, remap_the_kernel};
+
 mod area_frame_allocator;
 mod paging;
 /// The standard Page/Frame size
@@ -31,6 +32,33 @@ impl Frame {
     /// Does what the trait 'Clone' does, but if implemented like this it remains private. If not prvate like this,  the frame allocator could free the same frame twice and so on.
     fn clone(&self) -> Frame {
         Frame { number: self.number }
+    }
+    // To map a section we need to iterate over all sections of the frame. 
+    fn range_inclusive(start: Frame, end: Frame) -> FrameIter {
+        FrameIter {
+            start: start,
+            end: end,
+        }
+    }
+}
+
+struct FrameIter {
+    start: Frame,
+    end: Frame,
+}
+
+/// The itterator that iterates the sections frames
+impl Iterator for FrameIter {
+    type Item = Frame;
+
+    fn next(&mut self) -> Option<Frame> {
+        if self.start <= self.end {
+            let frame = self.start.clone();
+            self.start.number += 1;
+            Some(frame)
+        } else {
+            None
+        }
     }
 }
 

@@ -202,7 +202,7 @@ p3_table:
 p2_table:
     resb 4096
 stack_bottom:
-        ;; Reserve 2 MB stack.
+        ;; Reserve 2 MB stack.   Phills guide säger 4096 * 2 här
     resb 16384
 stack_top:
 
