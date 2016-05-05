@@ -90,8 +90,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     enable_nxe_bit();
     enable_write_protect_bit();
 
-    memory::test_paging(&mut frame_allocator);
-/*
+    /*
     // Try allocating _all available frames_.
     for i in 0.. {
         use memory::FrameAllocator;
@@ -142,7 +141,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     memory::test_paging(&mut frame_allocator);
     
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
-    frame_allocator.allocate_frame();
+    //frame_allocator.allocate_frame();
     println!("It did not crash!");
     
 
@@ -162,6 +161,7 @@ fn fac(n: u64) -> u64 {
         1 => 1,
         _ => n * fac(n-1)
     }
+}
 fn enable_nxe_bit() {
     use x86::msr::{IA32_EFER, rdmsr, wrmsr};
     
