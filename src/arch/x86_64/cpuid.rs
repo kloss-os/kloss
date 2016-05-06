@@ -4,8 +4,8 @@
 #![allow(dead_code)]
 
 // RESOURCES:
-// http://x86.renejeschke.de/html/file_module_x86_id_45.html
-//
+// http://sandpile.org/x86/cpuid.htm
+// PDF:s in google drive folder (simon)
 
 // CONSTANTS FOR USING CPUID
 // -- BASIC CPUID
