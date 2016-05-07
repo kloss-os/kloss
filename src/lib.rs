@@ -128,22 +128,32 @@ pub extern fn rust_main(multiboot_information_address: usize) {
 
         // Enable global interrupts!
         asm!("sti" ::::"intel");
+    }
 
-        // TESTING CPUID MODULE
-        use arch::x86_64::cpuid;
+    // TESTING CPUID MODULE
+    use arch::x86_64::cpuid;
+    let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
+    
+    // Basic info
+    let (max,vid) = m_cpuid.basicInfo();
+    println!("\nCPUID BASE INFO:");
+    println!("  Max instruction: 0x{:x}\n  Vendor ID: {:?}\n", max, vid);
 
-        let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
-        let result = m_cpuid.get(0x0000000);
-        match result {
-            // Got an answer
-            Some(ans) => {
-                let (a,b,c,d) = ans;
-                println!("\nCPUID:");
-                println!("  eax: 0x{:x}\n  ebx: 0x{:x}\n  ecx: 0x{:x}\n  edx: 0x{:x}\n", a,b,c,d);
-            },
-            // Exceeded available options
-            None      => println!("\nCPUID:\n    None\n")
-        }
+    // FMT
+    match m_cpuid.cpuModel() {
+        Some(fms) => println!("CPUID FMT:\n  stepping: 0x{:x}\n  type: 0x{:x}\n  model:\
+                               0x{:x}\n  family: 0x{:x}\n  brand: 0x{:x}\n  cpu count: 0x{:x}\n  \
+                               apic-id: 0x{:x}\n  clflush: 0x{:x}",
+                              fms.stepping, fms.cpu_type, fms.model, fms.family, fms.brand,
+                              fms.cpu_cnt, fms.apic_id, fms.clflush),
+        None => println!("FMT command not available.")
+
+    }
+
+    // FLAGS
+    match m_cpuid.flags() {
+        Some(cpuflags) => println!("SSE3: {}", cpuflags.sse3),
+        None => println!("Flag command not available.")
     }
 
     println!("Ran {} recursive calls", call_recursively(10));
