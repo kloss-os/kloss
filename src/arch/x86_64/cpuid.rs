@@ -295,7 +295,97 @@ const CENTAUR_RES6      : u32 = 0xC000_0007;
 // EOF CONSTANTS FOR USING CPUID 
 
 
+// BITMASKS
+// -- Generic
+/// Mask lower byte
+const MASK_BYTE : u32 = 0xff;
 
+/// Mask half byte
+const MASK_HALF_BYTE : u32 = 0xf;
+
+// Struct for listing CPU flags
+pub struct CPUFlags {
+    // ECX Register
+    pub hv: bool,
+    pub rdrand: bool,
+    pub f16c: bool,
+    pub avx: bool,
+    pub osxsave: bool,
+    pub xsave: bool,
+    pub aes: bool,
+    pub tscd: bool,
+    pub popcnt: bool,
+    pub movbe: bool,
+    pub x2apic: bool,
+    pub sse4_2: bool,
+    pub sse4_1: bool,
+    pub dca: bool,
+    pub pcid: bool,
+    // Bit 16 reserved
+    pub pdcm: bool,
+    pub etprd: bool,
+    pub cx16: bool,
+    pub fma: bool,
+    pub sdbg: bool,
+    pub cid: bool,
+    pub ssse3: bool,
+    pub tm2: bool,
+    pub est: bool,
+    pub smx: bool,
+    pub vmx: bool,
+    pub dscpl: bool,
+    pub mon: bool,
+    pub dtes64: bool,
+    pub pclmul: bool,
+    pub sse3: bool,
+    
+    // EDX register
+    pub pbe: bool,
+    pub ia_64: bool,
+    pub tm1: bool,
+    pub htt: bool,
+    pub ss: bool,
+    pub sse2: bool,
+    pub sse: bool,
+    pub fxsr: bool,
+    pub mmx: bool,
+    pub acpi: bool,
+    pub dtes: bool,
+    // Bit 20 reserved
+    pub clfl: bool,
+    pub psn: bool,
+    pub pse36: bool,
+    pub pat: bool,
+    pub cmov: bool,
+    pub mca: bool,
+    pub pge: bool,
+    pub mtrr: bool,
+    pub sep: bool,
+    // Bit 10 reserved
+    pub apic: bool,
+    pub cx8: bool,
+    pub mce: bool,
+    pub pae: bool,
+    pub msr: bool,
+    pub tsc: bool,
+    pub pse: bool,
+    pub de: bool,
+    pub vme: bool,
+    pub fpu: bool
+}
+
+/// Struct for processor type/family/model/stepping
+pub struct CPUModel {
+    pub cpu_type: u8,
+    pub family:   u8,
+    pub model:    u16,
+    pub brand:    u8,
+    pub stepping: u8,
+    pub cpu_cnt:  u8,
+    pub apic_id:  u8,
+    pub clflush:  u8
+
+}
 
 /// Struct for keeping tab on highest available
 /// option for current CPU.
@@ -327,7 +417,7 @@ impl CPUID {
     // BASIC OPTIONS
 
     /// Max supported basic option and vendor ID string
-    pub fn basicInfo() -> (u32, [u8;13]) {
+    pub fn basicInfo(&self) -> (u32, [char;12]) {
         // Call CPUID
         let resp;
         unsafe {
@@ -336,40 +426,140 @@ impl CPUID {
         
         // Extract info
         let (a,b,c,d) = resp;
-        let mut id : [u8;13] = [0;13];
+        let mut id : [char;12] = ['\0';12];
 
         // Correctly arrange letters of vendor ID string
         // as they are ordered ebx -> edx -> ecx with
         // letters arranged LSB to MSB (eg. "h t u A" is
         // actually "A u t h").
-        id[0]  = (b & 0xff) as u8;
-        id[1]  = ((b >> 8) & 0xff) as u8;
-        id[2]  = ((b >> 16) & 0xff) as u8;
-        id[3]  = ((b >> 24) & 0xff) as u8;
+        id[0]  = (b & MASK_BYTE) as u8 as char;
+        id[1]  = ((b >> 8) & MASK_BYTE) as u8 as char;
+        id[2]  = ((b >> 16) & MASK_BYTE) as u8 as char;
+        id[3]  = ((b >> 24) & MASK_BYTE) as u8 as char;
 
-        id[4]  = (d & 0xff) as u8;
-        id[5]  = ((d >> 8) & 0xff) as u8;
-        id[6]  = ((d >> 16) & 0xff) as u8;
-        id[7]  = ((d >> 24) & 0xff) as u8;
+        id[4]  = (d & MASK_BYTE) as u8 as char;
+        id[5]  = ((d >> 8) & MASK_BYTE) as u8 as char;
+        id[6]  = ((d >> 16) & MASK_BYTE) as u8 as char;
+        id[7]  = ((d >> 24) & MASK_BYTE) as u8 as char;
 
-        id[8]   = (c & 0xff) as u8;
-        id[9]   = ((c >> 8) & 0xff) as u8;
-        id[10]  = ((c >> 16) & 0xff) as u8;
-        id[11]  = ((c >> 24) & 0xff) as u8;
+        id[8]   = (c & MASK_BYTE) as u8 as char;
+        id[9]   = ((c >> 8) & MASK_BYTE) as u8 as char;
+        id[10]  = ((c >> 16) & MASK_BYTE) as u8 as char;
+        id[11]  = ((c >> 24) & MASK_BYTE) as u8 as char;
 
         // Return tuple of values
-        (a,id)
+        (a, id)
+    }
+
+    /// Get processor family/model/stepping
+    /// TODO: verify it works!!!!
+    pub fn cpuModel(&self) -> Option<CPUModel> {
+        match self.get(BASIC_FMS_FLAGS, self.basic_highest_option) {
+            Some((a,b,_,_)) => {
+                // Call was OK, filter out values
+                Some(CPUModel {
+                    cpu_type: ((a >> 12) & MASK_HALF_BYTE) as u8,
+                    family: (((a >> 8) & MASK_BYTE) + ((a >> 20) & MASK_BYTE)) as u8,
+                    model:  (((a >> 12) & (MASK_BYTE << 4)) | (a >> 4 & MASK_BYTE)) as u16,
+                    brand:  (b & MASK_BYTE) as u8,
+                    stepping: (a & MASK_HALF_BYTE) as u8,
+                    cpu_cnt: ((b >> 16) & MASK_BYTE) as u8,
+                    apic_id: ((b >> 24) & MASK_BYTE) as u8,
+                    clflush: ((b >> 8) & MASK_BYTE) as u8
+                })
+            },
+            None => {
+                None
+            }
+        }
+    }
+
+    /// Get basic flags
+    pub fn flags(&self) -> Option<CPUFlags> {
+        match self.get(BASIC_FMS_FLAGS, self.basic_highest_option) {
+            Some((_,_,c,d)) => {
+                // Call was OK, filter out values
+                Some(CPUFlags {
+                    hv:      (c & (0x1 << 31)) > 0,
+                    rdrand:  (c & (0x1 << 30)) > 0,
+                    f16c:    (c & (0x1 << 29)) > 0,
+                    avx:     (c & (0x1 << 28)) > 0,
+                    osxsave: (c & (0x1 << 27)) > 0,
+                    xsave:   (c & (0x1 << 26)) > 0,
+                    aes:     (c & (0x1 << 25)) > 0,
+                    tscd:    (c & (0x1 << 24)) > 0,
+                    popcnt:  (c & (0x1 << 23)) > 0,
+                    movbe:   (c & (0x1 << 22)) > 0,
+                    x2apic:  (c & (0x1 << 21)) > 0,
+                    sse4_2:  (c & (0x1 << 20)) > 0,
+                    sse4_1:  (c & (0x1 << 19)) > 0,
+                    dca:     (c & (0x1 << 18)) > 0,
+                    pcid:    (c & (0x1 << 17)) > 0,
+                    // Bit 16 reserved
+                    pdcm:    (c & (0x1 << 15)) > 0,
+                    etprd:   (c & (0x1 << 14)) > 0,
+                    cx16:    (c & (0x1 << 13)) > 0,
+                    fma:     (c & (0x1 << 12)) > 0,
+                    sdbg:    (c & (0x1 << 11)) > 0,
+                    cid:     (c & (0x1 << 10)) > 0,
+                    ssse3:   (c & (0x1 << 9))  > 0,
+                    tm2:     (c & (0x1 << 8))  > 0,
+                    est:     (c & (0x1 << 7))  > 0,
+                    smx:     (c & (0x1 << 6))  > 0,
+                    vmx:     (c & (0x1 << 5))  > 0,
+                    dscpl:   (c & (0x1 << 4))  > 0,
+                    mon:     (c & (0x1 << 3))  > 0,
+                    dtes64:  (c & (0x1 << 2))  > 0,
+                    pclmul:  (c & (0x1 << 1))  > 0,
+                    sse3:    (c & 0x1)         > 0,
+                    
+                    // Snd register
+                    pbe:   (d & (0x1 << 31)) > 0,
+                    ia_64: (d & (0x1 << 30)) > 0,
+                    tm1:   (d & (0x1 << 29)) > 0,
+                    htt:   (d & (0x1 << 28)) > 0,
+                    ss:    (d & (0x1 << 27)) > 0,
+                    sse2:  (d & (0x1 << 26)) > 0,
+                    sse:   (d & (0x1 << 25)) > 0,
+                    fxsr:  (d & (0x1 << 24)) > 0,
+                    mmx:   (d & (0x1 << 23)) > 0,
+                    acpi:  (d & (0x1 << 22)) > 0,
+                    dtes:  (d & (0x1 << 21)) > 0,
+                    // Bit 20 reserved
+                    clfl:  (d & (0x1 << 19)) > 0,
+                    psn:   (d & (0x1 << 18)) > 0,
+                    pse36: (d & (0x1 << 17)) > 0,
+                    pat:   (d & (0x1 << 16)) > 0,
+                    cmov:  (d & (0x1 << 15)) > 0,
+                    mca:   (d & (0x1 << 14)) > 0,
+                    pge:   (d & (0x1 << 13)) > 0,
+                    mtrr:  (d & (0x1 << 12)) > 0,
+                    sep:   (d & (0x1 << 11)) > 0,
+                    // Bit 10 reserved
+                    apic:  (d & (0x1 << 9)) > 0,
+                    cx8:   (d & (0x1 << 8)) > 0,
+                    mce:   (d & (0x1 << 7)) > 0,
+                    pae:   (d & (0x1 << 6)) > 0,
+                    msr:   (d & (0x1 << 5)) > 0,
+                    tsc:   (d & (0x1 << 4)) > 0,
+                    pse:   (d & (0x1 << 3)) > 0,
+                    de:    (d & (0x1 << 2)) > 0,
+                    vme:   (d & (0x1 << 1)) > 0,
+                    fpu:   (d & 0x1)        > 0,
+                })
+            },
+            None => {
+                None
+            }
+        }
+        
     }
 
     /// Call CPUID using supplied option, only
     /// if option does not exceed highest option
     /// available.
-    pub fn get(&self, option: u32) -> Option<(u32,u32,u32,u32)> {
-        // Check if valid basic- or extended option
-        let basic = (option >= BASIC_INFO) && (option <= self.basic_highest_option);
-        let extended = (option >= EXT_INFO) && (option <= self.ext_highest_option);
-
-        if basic || extended {
+    pub fn get(&self, option: u32, max_avail: u32) -> Option<(u32,u32,u32,u32)> {
+        if option <= max_avail {
             unsafe {
                 Some(call_cpuid(option))
             }
