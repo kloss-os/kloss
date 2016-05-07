@@ -324,6 +324,43 @@ impl CPUID {
         }
     }
 
+    // BASIC OPTIONS
+
+    /// Max supported basic option and vendor ID string
+    pub fn basicInfo() -> (u32, [u8;13]) {
+        // Call CPUID
+        let resp;
+        unsafe {
+            resp = call_cpuid(BASIC_INFO);
+        }
+        
+        // Extract info
+        let (a,b,c,d) = resp;
+        let mut id : [u8;13] = [0;13];
+
+        // Correctly arrange letters of vendor ID string
+        // as they are ordered ebx -> edx -> ecx with
+        // letters arranged LSB to MSB (eg. "h t u A" is
+        // actually "A u t h").
+        id[0]  = (b & 0xff) as u8;
+        id[1]  = ((b >> 8) & 0xff) as u8;
+        id[2]  = ((b >> 16) & 0xff) as u8;
+        id[3]  = ((b >> 24) & 0xff) as u8;
+
+        id[4]  = (d & 0xff) as u8;
+        id[5]  = ((d >> 8) & 0xff) as u8;
+        id[6]  = ((d >> 16) & 0xff) as u8;
+        id[7]  = ((d >> 24) & 0xff) as u8;
+
+        id[8]   = (c & 0xff) as u8;
+        id[9]   = ((c >> 8) & 0xff) as u8;
+        id[10]  = ((c >> 16) & 0xff) as u8;
+        id[11]  = ((c >> 24) & 0xff) as u8;
+
+        // Return tuple of values
+        (a,id)
+    }
+
     /// Call CPUID using supplied option, only
     /// if option does not exceed highest option
     /// available.
