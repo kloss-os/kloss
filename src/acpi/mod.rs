@@ -263,8 +263,8 @@ pub unsafe fn print_ioreg(addr: u32) {
     //     : "{eax}"(seg),"{ecx}"(base_msr),"{edx}"(off)
     //     : "{eax}","{ecx}","{edx}"
     //     : "intel" );
-    let ioapic = addr as *mut u32;
-    let ioregsel = volatile_load(ioapic);
+    //let ioapic = addr as *mut u32;
+    //let ioregsel = volatile_load(ioapic);
     //let ioregsel = *(addr as *const u32);
     //let iowin    = &*((addr + 0x10) as *const u32);
     //println!("IOREGSEL: 0x{:x}", ioregsel);

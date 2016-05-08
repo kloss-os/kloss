@@ -3,6 +3,7 @@
 
 
 /// A struct representing the RSDP descriptor, it has to be packed C-style
+/// 48 bytes in total
 /// Based on OSDEV C struct
 #[repr(C)]
 pub struct RSDPdesc {
@@ -26,8 +27,9 @@ pub struct RSDPdesc {
 pub fn load_rsdp() -> Option<&'static RSDPdesc> {
     // Start by getting the ebda start address which is located at 0x40e
     // The address is a segmented 2-byte pointer
-    let ebda_start: usize;
+    let ebda_start: usize = 0x000400e;
 
+    /*
     // Since the address technically is a 20-bit integer, u16 is too small!
     let mut ebda_segment: u32;
     let mut ebda_offset: u32;
@@ -48,6 +50,7 @@ pub fn load_rsdp() -> Option<&'static RSDPdesc> {
 
     // Now we simply add the two addresses using bitwise OR
     ebda_start = (ebda_segment | ebda_offset) as usize;
+    */
 
     // EBDA is max 1 KB  long, so we can get the end address
     let ebda_end = ebda_start + 0x400;
@@ -93,19 +96,21 @@ pub fn load_rsdp() -> Option<&'static RSDPdesc> {
 unsafe fn load_rsdp_addr(rsdp_addr: usize) -> Option<&'static RSDPdesc> {
     // THIS IS HOW YOU RECAST SH... stuff
     // Phil Opp's multiboot2 code uses similar syntax
-    let rsdp_desc = &*(rsdp_addr as *const RSDPdesc);
-    if verify_rsdp(rsdp_desc) {
-        return Some(rsdp_desc);
+    if unsafe { verify_rsdp(rsdp_addr) } {
+        return Some(&*(rsdp_addr as *const RSDPdesc));
     } else {
         return None;
     }
 }
 
+
+
 /// Verifies a given RSDP descriptor (looks at ID and checksum)
-fn verify_rsdp(rsdpd: &'static RSDPdesc) -> bool {
+unsafe fn verify_rsdp(rsdp_addr: usize) -> bool {
+    let rsdpd = &*(rsdp_addr as *const RSDPdesc);
+
     // We need an ASCII string containing "RSD PTR "
-    let str: [u8; 8] = [82, 83, 68, 32, 80, 84, 82, 32];
-    //let str: &[u8; 8] = b"RSD PTR ";
+    let str: &[u8; 8] = b"RSD PTR ";
 
     // Check identifier string
     // Got this line, more or less, from
@@ -117,53 +122,16 @@ fn verify_rsdp(rsdpd: &'static RSDPdesc) -> bool {
 
     // Let's verify the checksum!
     // This must be done for every _byte_ in the struct
+    // Due to overflow risk we make it bigger than u8
     let mut chksum: u32 = 0;
 
-    // Sum signature
-    // Should be constant, and already verified. Could skip this.
-    for i in rsdpd.signature.iter() {
-        chksum = chksum + (*i & 0xFF) as u32;
+
+    let start = rsdp_addr as *const u8;
+    for i in 0..(0x30) {
+        //cur_val: u8 = *start.offset(i as isize);
+        chksum = chksum & 0xFF + *start.offset(i as isize) as u32;
     }
 
-    // Sum checksum
-    chksum = chksum + (rsdpd.checksum & 0xFF) as u32;
-
-    // Sum OEMID
-    for i in rsdpd.oemid.iter() {
-        //println!("OEMID {}", *i as char);
-        chksum = chksum + (*i & 0xFF) as u32;
-    }
-
-    // Sum revision
-    chksum = chksum + (rsdpd.revision & 0xFF) as u32;
-
-    // Sum address, this is ugly since we need to add all four bytes
-    chksum = chksum + ((rsdpd.rsdt_addr >> 0x18) & 0xFF);
-    chksum = chksum + ((rsdpd.rsdt_addr >> 0x10) & 0xFF);
-    chksum = chksum + ((rsdpd.rsdt_addr >> 0x08) & 0xFF);
-    chksum = chksum + (rsdpd.rsdt_addr & 0xFF);
-
-
-    // Mask all bytes above this
-    chksum = chksum & 0xFF;
-
-
-
-    // Debug lines for your pleasure!
-    println!("RSDP checksum 0x{:x}", rsdpd.checksum);
-    println!("ACPI version {}", rsdpd.revision);
-    println!("RSDT address 0x{:x}", rsdpd.rsdt_addr);
-    println!("Calculated checksum 0x{:x}", chksum);
-
-
-    if chksum != 0 {
-        return false;
-    }
-
-    if rsdpd.revision == 0 {
-        return true;
-    } else {
-        //TODO: implement ACPI 2.0 support
-        return false;
-    }
+    // Return masked sum, we don't care about values above LSB
+    return chksum & 0xFF == 0;
 }
