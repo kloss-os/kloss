@@ -32,7 +32,7 @@ extern crate x86;
 mod vga_buffer;
 mod memory;
 
-mod idt;
+mod irq;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -112,29 +112,29 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     println!("Setting up the IDT!");
     unsafe{
-        idt::idt_install();
-        let flags =   idt::FLAG_TYPE_TRAP_GATE
-                    | idt::FLAG_DPL_KERNEL_MODE
-                    | idt::FLAG_GATE_ENABLED;
+        irq::idt::install();
+        let flags =   irq::idt::FLAG_TYPE_TRAP_GATE
+                    | irq::idt::FLAG_DPL_KERNEL_MODE
+                    | irq::idt::FLAG_GATE_ENABLED;
 
 
         // Install interrupt handlers for *everything*!
         for ev in 0..33 {
-            idt::idt_set_gate(ev, general_exception_handler,
-                              idt::SELECT_TARGET_PRIV_1, flags);
+            irq::idt::set_gate(ev, general_exception_handler,
+                               irq::idt::SELECT_TARGET_PRIV_1, flags);
         }
 
         for iv in 33..256 {
-            idt::idt_set_gate(iv, null_interrupt_handler,
-                              idt::SELECT_TARGET_PRIV_1, flags);
+            irq::idt::set_gate(iv, null_interrupt_handler,
+                               irq::idt::SELECT_TARGET_PRIV_1, flags);
         }
 
-        idt::idt_set_gate(42, isr_42,
-                          idt::SELECT_TARGET_PRIV_1, flags);
-        idt::idt_set_gate(12, isr_12,
-                          idt::SELECT_TARGET_PRIV_1, flags);
-        idt::idt_set_gate(255, isr_255,
-                          idt::SELECT_TARGET_PRIV_1, flags);
+        irq::idt::set_gate(42, isr_42,
+                           irq::idt::SELECT_TARGET_PRIV_1, flags);
+        irq::idt::set_gate(12, isr_12,
+                           irq::idt::SELECT_TARGET_PRIV_1, flags);
+        irq::idt::set_gate(255, isr_255,
+                           irq::idt::SELECT_TARGET_PRIV_1, flags);
 
         asm!("int 42" ::::"intel");
         asm!("int 12" ::::"intel");

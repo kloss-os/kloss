@@ -1,4 +1,5 @@
-// This file contains functions related to reading and writing the IDT, that is the global interrupt descriptor table.
+//! This module contains functions related to reading and writing the
+//! IDT, that is the global interrupt descriptor table.
 
 /// The number of expected entries in the IDT.
 const IDT_NUM_ENTRIES: usize = 256;
@@ -193,10 +194,10 @@ pub struct IdtEntry {
 /// the IDT both before and after installing it.
 /// ## Safety
 /// Replaces the contents of the `IDTR` special register.
-pub unsafe fn idt_install() {
+pub unsafe fn install() {
 
     // This is the length of one IDT entry.
-    let idt_entry_size = super::core::mem::size_of::<IdtEntry>();
+    let idt_entry_size = super::super::core::mem::size_of::<IdtEntry>();
 
     // Determine the limit (read: length) of the IDT, for IDTR.
     let idt_limit = (idt_entry_size * IDT_NUM_ENTRIES) - 1;
