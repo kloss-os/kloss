@@ -27,30 +27,25 @@ pub struct RSDPdesc {
 pub fn load_rsdp() -> Option<&'static RSDPdesc> {
     // Start by getting the ebda start address which is located at 0x40e
     // The address is a segmented 2-byte pointer
-    let ebda_start: usize = 0x000400e;
 
-    /*
-    // Since the address technically is a 20-bit integer, u16 is too small!
-    let mut ebda_segment: u32;
-    let mut ebda_offset: u32;
+    let ebda_start: usize;
+    let ebda_ptr: *const u32;
 
-    // Get the pointer into one of the variables
     unsafe {
-        asm!( "mov rax, [0x40e]"
-            : "={rax}"(ebda_offset) :
-            : "{rax}"
-            : "intel" );
+        ebda_ptr = &*(0x40e as *const u32);
+
+        // Since the address technically is a 20-bit integer, u16 is too small!
+        let mut ebda_segment: u32;
+        let mut ebda_offset: u32;
+
+        // Mask the unneccesary bits
+        ebda_segment = (*ebda_ptr << 0x08) & 0x000FFFF0;
+        ebda_offset  = *ebda_ptr & 0x00000001;
+
+        // Now we simply add the two addresses using bitwise OR
+        ebda_start = (ebda_segment | ebda_offset) as usize;
     }
-    // Place the shifted version to the other
-    ebda_segment = ebda_offset << 0x08;
 
-    // Mask the unneccesary bits
-    ebda_segment = ebda_segment & 0x000FFFF0;
-    ebda_offset  = ebda_offset  & 0x00000001;
-
-    // Now we simply add the two addresses using bitwise OR
-    ebda_start = (ebda_segment | ebda_offset) as usize;
-    */
 
     // EBDA is max 1 KB  long, so we can get the end address
     let ebda_end = ebda_start + 0x400;
@@ -126,12 +121,13 @@ unsafe fn verify_rsdp(rsdp_addr: usize) -> bool {
     let mut chksum: u32 = 0;
 
 
+    // RSDP descriptor is 48 bytes long
     let start = rsdp_addr as *const u8;
     for i in 0..(0x30) {
         //cur_val: u8 = *start.offset(i as isize);
         chksum = chksum & 0xFF + *start.offset(i as isize) as u32;
     }
 
-    // Return masked sum, we don't care about values above LSB
+    // Return masked sum, we don't care about values above LSByte
     return chksum & 0xFF == 0;
 }

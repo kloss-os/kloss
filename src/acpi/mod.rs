@@ -252,23 +252,46 @@ pub unsafe fn print_madt(madt: &'static MADT) {
 }
 
 
-pub unsafe fn print_ioreg(addr: u32) {
-    //let base_msr: u32 = 0x1b;
-    //let seg: u32 = addr >> 1;
-    //let seg: u32 = (addr & 0xFFFFF100) | 0x800;
-    //let off: u32 = (addr >> 32) & 0x0f;
-    //let off: u32 = 0;
-    //asm!("wrmsr"
-    //     :
-    //     : "{eax}"(seg),"{ecx}"(base_msr),"{edx}"(off)
-    //     : "{eax}","{ecx}","{edx}"
-    //     : "intel" );
-    //let ioapic = addr as *mut u32;
-    //let ioregsel = volatile_load(ioapic);
-    //let ioregsel = *(addr as *const u32);
-    //let iowin    = &*((addr + 0x10) as *const u32);
-    //println!("IOREGSEL: 0x{:x}", ioregsel);
-    //println!("IOWIN: 0x{:x}", iowin);
+/// Writes high:low into the specified msr
+unsafe fn write_msr(msr: u32, high: u32, low: u32) {
+    asm!("wrmsr"
+        :
+        : "{ecx}"(msr), "{edx}"(high), "{eax}"(low)
+        : "{ecx}","{edx}","{eax}"
+        : "intel" );
+}
+
+
+/// Reads MSR
+unsafe fn read_msr(msr: u32) -> u64 {
+    let high: u32;
+    let low: u32;
+    asm!("rdmsr"
+        : "={edx}"(high), "={eax}"(low)
+        : "{ecx}"(msr)
+        : "{ecx}","{edx}","{eax}"
+        : "intel" );
+    (((high as u64) << 32) | (low as u64)) as u64
+}
+
+unsafe fn set_ioapic(new_addr: usize) {
+    // Account for PAE
+    let high: u32 = ((new_addr >> 32) & 0x0f) as u32;
+    // Enable base MSR
+    let low: u32 = ((new_addr & 0xFFFFF100) | 0x800) as u32;
+    // Set MSR
+    let msr: u32 = 0x1b;
+    write_msr(msr, high, low);
+}
+
+
+unsafe fn read_ioapic(ioapicaddr: u32, reg: u32) -> u32 {
+    let ref mut ioapic = &*(ioapicaddr as *const u32);
+    let regaddr = &(reg);
+
+    volatile_store(ioapic, regaddr);
+    let regwinaddr = (ioapicaddr as *const u32).offset(4);
+    volatile_load( regwinaddr )
 }
 
 
@@ -289,26 +312,79 @@ unsafe fn check_cpuid() {
 }
 
 
+unsafe fn mask_pic_irq() {
+    let pic1_data: u16 = 0x21;
+    let pic2_data: u16 = 0xA1;
+
+    for i in 0..8 {
+        let current_pic = if i > 8 { pic1_data } else { pic2_data };
+        let current_irq = i % 8;
+        let value: u8;
+        asm!("in al, dx"
+             : "={al}"(value)
+             : "{dx}"(current_pic)
+             : "{al}","{dx}"
+             : "intel" );
+
+        let masked = value | (1 << current_irq);
+        asm!("out dx, al"
+             :
+             : "{dx}"(current_pic),"{al}"(value)
+             : "{al}","{dx}"
+             : "intel" );
+    }
+}
+
+unsafe fn remap_pic() {
+    // https://en.wikibooks.org/wiki/X86_Assembly/Programmable_Interrupt_Controller#Remapping
+
+    asm!("mov al, 0x11\n\t\
+          out 0x20, al\n\t\
+          out 0xA0, al\n\t\
+          mov al, 0x20\n\t\
+          out 0x21, al\n\t\
+          mov al, 0x28\n\t\
+          out 0xA1, al\n\t\
+          mov al, 0x04\n\t\
+          out 0x21, al\n\t\
+          mov al, 0x02\n\t\
+          out 0xA1, al\n\t\
+          mov al, 0x01\n\t\
+          out 0x21, al\n\t\
+          out 0xA1, al"
+        :
+        :
+        : "{al}"
+        : "intel"
+        )
+}
+
 
 
 
 /// This is mainly for testing, should delete once we're sure of things
 pub fn get_rsdt() -> u8 {
 
+    unsafe { mask_pic_irq(); }
+    unsafe { remap_pic(); }
+    unsafe { set_ioapic(0xFEC00000); }
+
     if let Some(rsdt) = load_rsdt() {
         println!("Loaded RSDT, length is 0x{:x}!", rsdt.header.length);
+
 
         if let Some(madt) = unsafe { load_madt(&rsdt) } {
             println!("Loaded MADT");
             unsafe { print_madt(&madt); }
-            
+
             if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
                 println!("Loaded I/O APIC!");
                 println!("ID: {:x}, Address: {:x}, Reserved {:x}, GSIB: {:x}",
                         ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
 
-                //unsafe { print_ioreg(ioapic.address); }
                 unsafe { check_cpuid(); }
+                println!("IOAPIC contains 0x{:x}", unsafe { read_ioapic(ioapic.address, 0x10) });
+                println!("MSR 0x1b is 0x{:x}", unsafe{read_msr(0x1b)});
             } else {
                 println!("Not loaded ioapic D:");
             }
