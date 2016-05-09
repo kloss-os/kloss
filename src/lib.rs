@@ -207,3 +207,18 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 
     loop{}
 }
+
+// These functions are called from the ASM interrupt wrappers, and they
+// need to be here, unfortunately.
+
+#[no_mangle]
+pub extern fn rust_interrupt_handler(intnr: usize) {
+    println!("Handled interrupt {}!", intnr);
+    irq::entry(intnr);
+}
+
+#[no_mangle]
+pub extern fn rust_exception_handler() {
+    println!("Handled exception!");
+    irq::entry(intnr);
+}

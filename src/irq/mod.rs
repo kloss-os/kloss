@@ -16,6 +16,10 @@
 //! 2. Add a Rust handler using `irq::set_handler()`. Note that this is
 //!    _way slower_ and more indirect than the direct CPU dispatch, as it
 //!    involves at least one layer of indirection between calls.
+//!
+//! Also note that you need to define and export the non-mangled function
+//! `rust_interrupt_handler` from your main file, and in that function
+//! call `irq::entry()`, that is the dispatch entry function.
 
 
 // Modules and re-exports
@@ -27,6 +31,9 @@ mod asm_wrappers;
 pub use self::asm_wrappers::*;
 
 mod dispatch;
+
+// Exception entry point re-export
+pub use self::dispatch::entry;
 
 // End modules and re-exports
 
