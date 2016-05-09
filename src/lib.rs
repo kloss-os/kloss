@@ -177,14 +177,3 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 
     loop{}
 }
-
-#[no_mangle]
-pub extern fn rust_interrupt_handler(intnr: usize) {
-
-    println!("Handled interrupt {}!", intnr);
-}
-
-#[no_mangle]
-pub extern fn rust_exception_handler() {
-    println!("Handled exception!");
-}

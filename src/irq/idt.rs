@@ -1,6 +1,9 @@
 //! This module contains functions related to reading and writing the
 //! IDT, that is the global interrupt descriptor table.
 
+// Use the dispatch functions
+use super::dispatch::*;
+
 /// The number of expected entries in the IDT.
 const IDT_NUM_ENTRIES: usize = 256;
 

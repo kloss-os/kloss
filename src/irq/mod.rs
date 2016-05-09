@@ -6,9 +6,9 @@
 //! # Usage
 //! Before doing anything else, you need to perform
 //! `irq::idt::install()` to configure the CPU to use the provided
-//! IDT. This will install the module's default ISR:s for every
-//! exception and interrupt. There is then two ways you can go about
-//! adding your own ISRs:
+//! IDT. This will install the module's default ISRs (Interrupt Service
+//! Routines) for every exception and interrupt. There is then two ways
+//! you can go about adding your own ISRs:
 //!
 //! 1. Add them using `irq::idt::set_gate()`. This will override the
 //!    system routine and the provided routine _must be an assembler
@@ -26,4 +26,32 @@ mod asm_wrappers;
 // FIXME: these should NOT BE PUBLIC
 pub use self::asm_wrappers::*;
 
+mod dispatch;
+
 // End modules and re-exports
+
+/// Set the (module-internal) interrupt handler for vector `vec`.
+///
+/// **Warning**: This will only work if:
+///
+/// 1. The module's IDT was installed using `irq::install()`, and
+/// 2. The ISR for `vec` has not been replaced with
+///    `irq::idt::set_gate()`.
+/// If you are in doubt, use `set_system_isr()` to restore the system
+/// ISR dispatcher.
+///
+/// - `vec` can be any integer in the range [0, 255].
+/// - `f` must be a handling Rust function taking as its single
+///   argument the triggered interrupt. `f` can be `unsafe`.
+///
+/// # Examples
+///
+pub fn set_handler(vec: u32,
+                   f: unsafe fn(u32)) -> () {
+
+}
+
+/// Install/restore the system ISR for vector `vec`.
+pub fn set_system_isr(vec: u32) -> () {
+
+}
