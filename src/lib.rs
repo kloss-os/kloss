@@ -1,4 +1,9 @@
-//! This is the main kernel file.
+//! Banjos is an experimental kernel for (reasonably) modern x86_64
+//! systems written in Rust. It was intended as an educational exercise,
+//! and strives to minimise complexity while maximising good programming
+//! practices, clarity, and use of high-level designs over raw
+//! performance.
+
 #![feature(lang_items)]
 #![no_std]
 
@@ -139,25 +144,28 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     println!("3! = {}", fac(3));
 
     memory::test_paging(&mut frame_allocator);
-    
+
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
-    
+
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
-    
+
     println!("It did not crash!");
-    
+
 
     loop{}
 }
-// TODO: Skall dett vara kvar??
+
+/// Stack stress test function: perform `n` (non-tail) recursive calls
+/// and return the number of calls made.
 fn call_recursively(n: u64) -> u64 {
     match n {
         0 => 0,
         _ => 1 + call_recursively(n-1)
     }
 }
-// TODO: Skall detta vara kvar 
+
+/// Stack stress test function: calculate the factorial of `n`.
 fn fac(n: u64) -> u64 {
     match n {
         0 => 1,
@@ -165,9 +173,10 @@ fn fac(n: u64) -> u64 {
         _ => n * fac(n-1)
     }
 }
+
 fn enable_nxe_bit() {
     use x86::msr::{IA32_EFER, rdmsr, wrmsr};
-    
+
     let nxe_bit = 1 << 11;
     unsafe {
         let efer = rdmsr(IA32_EFER);
