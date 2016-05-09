@@ -1,4 +1,4 @@
-// This is the main kernel file.
+//! This is the main kernel file.
 #![feature(lang_items)]
 #![no_std]
 

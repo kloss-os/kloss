@@ -105,21 +105,19 @@ pub unsafe fn idt_get_ptr()
     return idtr.base as *mut [IdtEntry; IDT_NUM_ENTRIES];
 }
 
-// Declare a static IDT containing `IDT_NUM_ENTRIES`
-// null entries.
+/// Declare a static IDT containing `IDT_NUM_ENTRIES`
+/// null entries.
 #[no_mangle]
 static mut idt: [IdtEntry; IDT_NUM_ENTRIES] =
     [NULL_IDT_ENTRY; IDT_NUM_ENTRIES];
 
-/* Use this function to set an entry in the IDT. A lot simpler
-*  than twiddling with the GDT ;) */
-/// Shamelessly stolen from Julia Evans.
 /// Set interrupt handler for `num` to run function `f` using selector
 /// `selector` and flags `flags`.
+/// Shamelessly stolen from Julia Evans.
 #[no_mangle]
-pub unsafe fn idt_set_gate(num: usize,
-                           f: unsafe extern "C" fn(),
-                           selector: u16, flags: u8)
+pub unsafe fn set_gate(num: usize,
+                       f: unsafe extern "C" fn(),
+                       selector: u16, flags: u8)
 {
 
     // typecast the function pointer to an int
