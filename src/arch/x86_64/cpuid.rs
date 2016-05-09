@@ -304,73 +304,204 @@ const MASK_BYTE : u32 = 0xff;
 const MASK_HALF_BYTE : u32 = 0xf;
 
 // Struct for listing CPU flags
-pub struct CPUFlags {
+pub struct Features {
     // ECX Register
+
+    /// Hypervisor present
     pub hv: bool,
+
+    /// RdRand available (instruction for hardware random number)
     pub rdrand: bool,
+
+    /// VCVTPH2PS and VCVTPS2PH instructions available
     pub f16c: bool,
+
+    /// Advanced vector extensions available
     pub avx: bool,
+
+    /// Complementary flag for XSAVE (I believe)
+    // TODO: Look up OSXSAVE further
     pub osxsave: bool,
+
+    /// Save processor extended state available
     pub xsave: bool,
+
+    /// Advanced Enctyption Standard instruction set available
     pub aes: bool,
+
+    /// Local APIC supports one-shot operation using TSC deadline value
     pub tscd: bool,
+
+    /// If (intel?) POPCNT instruction is available
     pub popcnt: bool,
+
+    /// Move Data After Swapping Bytes instruction available
     pub movbe: bool,
+
+    /// x2APIC present
     pub x2apic: bool,
+
+    /// SSE 4.2 supported
     pub sse4_2: bool,
+
+    /// SSE 4.1 supported 
     pub sse4_1: bool,
+    
+    /// Direct Cache Access
     pub dca: bool,
+
+    /// Process Context Identifiers
     pub pcid: bool,
+
     // Bit 16 reserved
+
+    /// Performance Debug Capability MSR
     pub pdcm: bool,
+
+    /// MISC_ENABLE.ETPRD
+    // TODO: Hitta info om denna
     pub etprd: bool,
+
+    /// CMPXCHG16B instruction available
+    /// (Atomic compare and exchange on 16-byte values)
     pub cx16: bool,
+
+    /// Fused multiply-add
     pub fma: bool,
+
+    /// DEBUG_INTERFACE MSR for silicon debug
     pub sdbg: bool,
+
+    /// Context ID: the L1 data cache can be set to adaptive- or shared mode
     pub cid: bool,
+
+    /// Supplemental Streaming SIMD Extensions 3
     pub ssse3: bool,
+
+    /// Thermal Monitor 2
     pub tm2: bool,
+
+    /// Enhanced SpeedStep
     pub est: bool,
+
+    /// Safer mode trusted execution technology (Intel TXT, formerly known as
+    /// LaGrande Technology) [Trusted Platform Module (TPM) Support]
     pub smx: bool,
+
+    /// Hardware virtualization (Intel VMX)
     pub vmx: bool,
+
+    /// CPL-qualified Debug Store 
     pub dscpl: bool,
+
+    /// Monitor/MWait
+    // TODO: Find mor info on `mon` flag
     pub mon: bool,
+
+    /// 64/bit Debug Store
     pub dtes64: bool,
+
+    /// PCLMUL Instruction set available (Intel Carry-Less
+    /// Multiplication Instrucion)  
     pub pclmul: bool,
+
+    /// SSE 3 support
     pub sse3: bool,
     
     // EDX register
+    
+    /// Pending Break Event
     pub pbe: bool,
-    pub ia_64: bool,
+
+    /// Intel Itanium Architecture 64-bit (not same as Intel x86_64)
+    pub ia64: bool,
+
+    /// Thermal Monitor 1
     pub tm1: bool,
+
+    /// Hyper Threading Technology
     pub htt: bool,
+
+    /// SelfSnoop
     pub ss: bool,
+
+    /// SSE 2 support
     pub sse2: bool,
+
+    /// SSE support
     pub sse: bool,
+
+    /// FXSAVE/FXRSTOR available
     pub fxsr: bool,
+
+    /// MultiMedia eXtensions
     pub mmx: bool,
+
+    /// ACPI via MSR (temperatire monitoring, clock speed modulation)
     pub acpi: bool,
+
+    /// Debug Trace and EMON Store MSRs
     pub dtes: bool,
+
     // Bit 20 reserved
+
+    /// CLFLUSH (Cache Line Flush) instruction available
     pub clfl: bool,
+
+    /// Processor Serial Number
     pub psn: bool,
+
+    /// 36-bit Page Size Extension available
     pub pse36: bool,
+
+    /// Page Attribute Table
     pub pat: bool,
+
+    /// CMOV instructions supported (Conditional Move)
     pub cmov: bool,
+
+    /// Machine Check Architecture
     pub mca: bool,
+
+    /// Page Global Enable *global bit in PDEs and PTEs)
     pub pge: bool,
+
+    /// Memory Type Range Registers
     pub mtrr: bool,
+
+    /// SYSENTER/SYSEXIT instructions supported
     pub sep: bool,
+
     // Bit 10 reserved
+
+    /// Onboard APIC present
     pub apic: bool,
+
+    /// CMPXCHG8 instruction (64-bit compare-and-swap) supported
     pub cx8: bool,
+
+    /// Machine Check Exception
     pub mce: bool,
+
+    /// Physical Address Extensoins (Support for >4GB RAM)
     pub pae: bool,
+
+    /// Model-Specific Registers (RDMSR/WRMSR instructions supported)
     pub msr: bool,
+
+    /// Time Stamp Counter
     pub tsc: bool,
+
+    /// Page Size Extensions (4MB memory pages)
     pub pse: bool,
+
+    /// Debugging Extensions (CR4.DE)
     pub de: bool,
+
+    /// Virtual Mode Extensions (8086 mode)
     pub vme: bool,
+
+    /// Onboard FPU (Floating Point Unit)
     pub fpu: bool
 }
 
@@ -391,9 +522,17 @@ pub struct CPUModel {
 /// option for current CPU.
 pub struct CPUID {
     /// Highest option available in call to Basic CPUID
-    basic_highest_option: u32,
+    basic_limit: u32,
+    /// Highest option available in call to Xenon Phi CPUID
+    xenon_phi_limit: u32,
+    /// Highest option available in call to Hypervisor CPUID
+    hypervisor_limit: u32,
     /// Highest option available in call to Extended CPUID
-    ext_highest_option: u32
+    ext_limit: u32,
+    /// Highest option available in call to Transmeta CPUID
+    transmeta_limit: u32,
+    /// Highest option available in call to Centaur CPUID
+    centaur_limit: u32
 }
 
 impl CPUID {
@@ -407,11 +546,40 @@ impl CPUID {
     /// ```
     pub fn new() -> CPUID {
         unsafe {
+            // Seems to return 0x0 if not present, however
+            // the response is flagged as `unknown` for
+            // options not available on CPU.
+            //
+            // TODO: Verify 0x0 returned for non-existing
+            //       option-levels.
             let (base, _, _, _) = call_cpuid(BASIC_INFO);
-            let (ext, _, _, _) = call_cpuid(EXT_INFO); // TODO: Change to EXT-INFO after fixing get-function
+            let (xenon, _, _, _) = call_cpuid(XENON_PHI_MAX);
+            let (hyper, _, _, _) = call_cpuid(HYPERVISOR_VENDOR);
+            let (ext, _, _, _) = call_cpuid(EXT_INFO);
+            let (trans, _, _, _) = call_cpuid(TRANSMETA_INFO);
+            let (centaur, _, _, _) = call_cpuid(CENTAUR_INFO);
 
-            return CPUID {basic_highest_option: base, ext_highest_option: ext};
+            return CPUID {
+                basic_limit: base,
+                xenon_phi_limit: xenon,
+                hypervisor_limit: hyper,
+                ext_limit: ext,
+                transmeta_limit: trans,
+                centaur_limit: centaur
+            };
         }
+    }
+
+
+    // DEBUG FUNCTIONS
+    pub fn print_limits(&self) {
+        println!("LIMITS:");
+        println!("  base:      0x{:x}", self.basic_limit);
+        println!("  xenon:     0x{:x}", self.xenon_phi_limit);
+        println!("  hyper:     0x{:x}", self.hypervisor_limit);
+        println!("  extended:  0x{:x}", self.ext_limit);
+        println!("  transmeta: 0x{:x}", self.transmeta_limit);
+        println!("  centaur:   0x{:x}\n", self.centaur_limit);
     }
 
     // BASIC OPTIONS
@@ -454,7 +622,7 @@ impl CPUID {
     /// Get processor family/model/stepping
     /// TODO: verify it works!!!!
     pub fn cpuModel(&self) -> Option<CPUModel> {
-        match self.get(BASIC_FMS_FLAGS, self.basic_highest_option) {
+        match self.get(BASIC_FMS_FLAGS, self.basic_limit) {
             Some((a,b,_,_)) => {
                 // Call was OK, filter out values
                 Some(CPUModel {
@@ -474,12 +642,13 @@ impl CPUID {
         }
     }
 
-    /// Get basic flags
-    pub fn flags(&self) -> Option<CPUFlags> {
-        match self.get(BASIC_FMS_FLAGS, self.basic_highest_option) {
+    /// Get feature list
+    pub fn features(&self) -> Option<Features> {
+        match self.get(BASIC_FMS_FLAGS, self.basic_limit) {
             Some((_,_,c,d)) => {
                 // Call was OK, filter out values
-                Some(CPUFlags {
+                // TODO: Move all bitmasks to consts for single computation
+                Some(Features {
                     hv:      (c & (0x1 << 31)) > 0,
                     rdrand:  (c & (0x1 << 30)) > 0,
                     f16c:    (c & (0x1 << 29)) > 0,
@@ -515,7 +684,7 @@ impl CPUID {
                     
                     // Snd register
                     pbe:   (d & (0x1 << 31)) > 0,
-                    ia_64: (d & (0x1 << 30)) > 0,
+                    ia64: (d & (0x1 << 30)) > 0,
                     tm1:   (d & (0x1 << 29)) > 0,
                     htt:   (d & (0x1 << 28)) > 0,
                     ss:    (d & (0x1 << 27)) > 0,

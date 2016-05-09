@@ -144,26 +144,26 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     let (max,vid) = m_cpuid.basicInfo();
     println!("\nCPUID BASE INFO:");
     println!("  Max instruction: 0x{:x}\n  Vendor ID: {:?}\n", max, vid);
-
+    m_cpuid.print_limits();
     // FMT
-    match m_cpuid.cpuModel() {
-        Some(fms) => println!("CPUID FMT:\n  stepping: 0x{:x}\n  type: 0x{:x}\n  model:\
-                               0x{:x}\n  family: 0x{:x}\n  brand: 0x{:x}\n  cpu count: 0x{:x}\n  \
-                               apic-id: 0x{:x}\n  clflush: 0x{:x}",
-                              fms.stepping, fms.cpu_type, fms.model, fms.family, fms.brand,
-                              fms.cpu_cnt, fms.apic_id, fms.clflush),
-        None => println!("FMT command not available.")
+ //   match m_cpuid.cpuModel() {
+ //       Some(fms) => println!("CPUID FMT:\n  stepping: 0x{:x}\n  type: 0x{:x}\n  model:\
+ //                              0x{:x}\n  family: 0x{:x}\n  brand: 0x{:x}\n  cpu count: 0x{:x}\n  \
+ //                              apic-id: 0x{:x}\n  clflush: 0x{:x}",
+ //                             fms.stepping, fms.cpu_type, fms.model, fms.family, fms.brand,
+ //                             fms.cpu_cnt, fms.apic_id, fms.clflush),
+ //       None => println!("FMT command not available.")
 
-    }
+ //   }
 
-    // FLAGS
-    match m_cpuid.flags() {
-        Some(cpuflags) => println!("SSE3: {}", cpuflags.sse3),
-        None => println!("Flag command not available.")
-    }
+    // FEATURES
+ //   match m_cpuid.features() {
+ //       Some(cpuflags) => println!("SSE3: {}", cpuflags.sse3),
+ //       None => println!("Flag command not available.")
+ //   }
 
-    println!("Ran {} recursive calls", call_recursively(10));
-    println!("3! = {}", fac(3));
+ //   println!("Ran {} recursive calls", call_recursively(10));
+ //   println!("3! = {}", fac(3));
 
     memory::test_paging(&mut frame_allocator);
     
