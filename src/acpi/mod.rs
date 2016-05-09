@@ -285,13 +285,17 @@ unsafe fn set_ioapic(new_addr: usize) {
 }
 
 
-unsafe fn read_ioapic(ioapicaddr: u32, reg: u32) -> u32 {
-    let ref mut ioapic = &*(ioapicaddr as *const u32);
-    let regaddr = &(reg);
+unsafe fn read_ioapic(ioapicaddr: *mut u32, reg: u32) -> u32 {
+    // Set IOWIN address
+    let iowin = (ioapicaddr as *const u32).offset(4);
 
-    volatile_store(ioapic, regaddr);
-    let regwinaddr = (ioapicaddr as *const u32).offset(4);
-    volatile_load( regwinaddr )
+    // Write the selected register to IOREGSEL
+    //volatile_store(ioapicaddr, reg);
+
+    //volatile_load( iowin )
+
+    *ioapicaddr = reg;
+    *iowin
 }
 
 
@@ -367,7 +371,7 @@ pub fn get_rsdt() -> u8 {
 
     unsafe { mask_pic_irq(); }
     unsafe { remap_pic(); }
-    unsafe { set_ioapic(0xFEC00000); }
+    unsafe { set_ioapic(0xFEC04400); }
 
     if let Some(rsdt) = load_rsdt() {
         println!("Loaded RSDT, length is 0x{:x}!", rsdt.header.length);
@@ -383,7 +387,7 @@ pub fn get_rsdt() -> u8 {
                         ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
 
                 unsafe { check_cpuid(); }
-                println!("IOAPIC contains 0x{:x}", unsafe { read_ioapic(ioapic.address, 0x10) });
+                //println!("IOAPIC contains 0x{:x}", unsafe { read_ioapic(ioapic.address as *mut u32, 0xF0) });
                 println!("MSR 0x1b is 0x{:x}", unsafe{read_msr(0x1b)});
             } else {
                 println!("Not loaded ioapic D:");
