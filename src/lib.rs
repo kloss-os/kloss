@@ -141,20 +141,34 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
     
     // Basic info
-    let (max,vid) = m_cpuid.basicInfo();
+    let (max,vid) = m_cpuid.basic_info();
     println!("\nCPUID BASE INFO:");
     println!("  Max instruction: 0x{:x}\n  Vendor ID: {:?}\n", max, vid);
     m_cpuid.print_limits();
     // FMT
- //   match m_cpuid.cpuModel() {
- //       Some(fms) => println!("CPUID FMT:\n  stepping: 0x{:x}\n  type: 0x{:x}\n  model:\
- //                              0x{:x}\n  family: 0x{:x}\n  brand: 0x{:x}\n  cpu count: 0x{:x}\n  \
- //                              apic-id: 0x{:x}\n  clflush: 0x{:x}",
- //                             fms.stepping, fms.cpu_type, fms.model, fms.family, fms.brand,
- //                             fms.cpu_cnt, fms.apic_id, fms.clflush),
- //       None => println!("FMT command not available.")
+    match m_cpuid.cpu_info() {
+        Some(fms) => {
+            let cpu_type;
+            match fms.cpu_type {
+                0 => cpu_type = "Primary",
+                1 => cpu_type = "Overdrive",
+                2 => cpu_type = "Secondary (for MP)",
+                _ => cpu_type = "Unknown"
+            };
+            
+            println!("CPUID FMT:");
+            println!("  stepping:  0x{:x}", fms.stepping);
+            println!("  type:      {}",     cpu_type);
+            println!("  model:     0x{:x}", fms.model);
+            println!("  family:    0x{:x}", fms.family);
+            println!("  brand:     0x{:x}", fms.brand);
+            println!("  cpu count: {}",     fms.cpu_cnt);
+            println!("  apic-id:   0x{:x}", fms.apic_id);
+            println!("  clflush:   0x{:x}", fms.clflush);
+        },
+        None => println!("FMT command not available.")
 
- //   }
+    }
 
     // FEATURES
  //   match m_cpuid.features() {
@@ -174,7 +188,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     
     println!("It did not crash!");
     
-
     loop{}
 }
 // TODO: Skall dett vara kvar??
