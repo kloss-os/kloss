@@ -10,16 +10,6 @@ extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
 
-
-extern {
-    fn general_interrupt_handler();
-    fn general_exception_handler();
-    fn null_interrupt_handler();
-    fn isr_42();
-    fn isr_255();
-    fn isr_12();
-}
-
 #[macro_use]
 extern crate bitflags;
 
@@ -120,20 +110,20 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
         // Install interrupt handlers for *everything*!
         for ev in 0..33 {
-            irq::idt::set_gate(ev, general_exception_handler,
+            irq::idt::set_gate(ev, irq::general_exception_handler,
                                irq::idt::SELECT_TARGET_PRIV_1, flags);
         }
 
         for iv in 33..256 {
-            irq::idt::set_gate(iv, null_interrupt_handler,
+            irq::idt::set_gate(iv, irq::null_interrupt_handler,
                                irq::idt::SELECT_TARGET_PRIV_1, flags);
         }
 
-        irq::idt::set_gate(42, isr_42,
+        irq::idt::set_gate(42, irq::isr_42,
                            irq::idt::SELECT_TARGET_PRIV_1, flags);
-        irq::idt::set_gate(12, isr_12,
+        irq::idt::set_gate(12, irq::isr_12,
                            irq::idt::SELECT_TARGET_PRIV_1, flags);
-        irq::idt::set_gate(255, isr_255,
+        irq::idt::set_gate(255, irq::isr_255,
                            irq::idt::SELECT_TARGET_PRIV_1, flags);
 
         asm!("int 42" ::::"intel");
