@@ -507,13 +507,33 @@ pub struct Features {
 
 /// Struct for processor type/family/model/stepping
 pub struct CPUModel {
+    /// Processor type (2-bit encoded)
+    /// 0 - Primary processor,
+    /// 1 - Overdrive processor,
+    /// 2 - Secondary processor (for MP),
+    /// 3 - reserved
     pub cpu_type: u8,
+
+    /// Processor family
     pub family:   u8,
+
+    /// Procssor model
     pub model:    u16,
+
+    /// Brand ID
+    // TODO: Use extended level for AMD
     pub brand:    u8,
+    
+    /// Processor-specific strpping values
     pub stepping: u8,
+    
+    /// Logical processor count
     pub cpu_cnt:  u8,
+
+    /// The (fixed) default APIC ID
     pub apic_id:  u8,
+
+    /// CLFLUSH (8-byte) Chunk count
     pub clflush:  u8
 
 }
@@ -582,10 +602,46 @@ impl CPUID {
         println!("  centaur:   0x{:x}\n", self.centaur_limit);
     }
 
+
+    // CHECK FUNCTIONS
+
+    /// Returns TRUE if basic options are available
+    pub fn basic_available(&self) -> bool {
+        self.basic_limit > 0
+    }
+
+    /// Returns TRUE if xenon phi options are available
+    pub fn xenon_phi_available(&self) -> bool {
+        self.xenon_phi_limit > 0
+    }
+
+    /// Returns TRUE if hypervisor options are available
+    pub fn hypervisor_available(&self) -> bool {
+        self.hypervisor_limit > 0
+    }
+
+    /// Returns TRUE if extended options are available
+    pub fn ext_available(&self) -> bool {
+        self.ext_limit > 0
+    }
+    
+    /// Returns TRUE if transmeta options are available
+    pub fn transmeta_available(&self) -> bool {
+        self.transmeta_limit > 0
+    }
+
+    /// Returns TRUE if centaur options are available
+    pub fn centaur_available(&self) -> bool {
+        self.centaur_limit > 0
+    }
+
+
+
+
     // BASIC OPTIONS
 
     /// Max supported basic option and vendor ID string
-    pub fn basicInfo(&self) -> (u32, [char;12]) {
+    pub fn basic_info(&self) -> (u32, [char;12]) {
         // Call CPUID
         let resp;
         unsafe {
@@ -621,7 +677,7 @@ impl CPUID {
 
     /// Get processor family/model/stepping
     /// TODO: verify it works!!!!
-    pub fn cpuModel(&self) -> Option<CPUModel> {
+    pub fn cpu_info(&self) -> Option<CPUModel> {
         match self.get(BASIC_FMS_FLAGS, self.basic_limit) {
             Some((a,b,_,_)) => {
                 // Call was OK, filter out values
