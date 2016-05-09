@@ -425,6 +425,26 @@ impl RecursivePageTable {
     }
 
 }
-*/
+
+
+
+/// InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU
+pub struct InactivePageTable {
+    p4_frame: Frame,
+}
+
+impl InactivePageTable {
+    pub fn new(frame: Frame) -> InactivePageTable {
+        //TODO zero and recursive map the frame
+        InactivePageTable {p4_frame: frame } 
+    }
+}
+/// Basic tresting of different page table levels and allocations as well as mapping specific bits in specific levels
+pub fn test_paging<A>(allocator: &mut A)
+    where A: FrameAllocator
+{
+        let mut page_table = unsafe { RecursivePageTable::new() };
 
 // InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU
+
+*/
