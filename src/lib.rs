@@ -139,6 +139,16 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     println!("\nCPUID BASE INFO:");
     println!("  Max instruction: 0x{:x}\n  Vendor ID: {:?}\n", max, vid);
     m_cpuid.print_limits();
+
+    // Flags
+    let m_features = m_cpuid.features();
+    println!("FEATURE TEST:");
+    println!("  SSE4.2: {}",   m_features.sse4_2());
+    println!("  SSE4.1: {}",   m_features.sse4_1());
+    println!("  SSE3:   {}",   m_features.sse3());
+    println!("  SSE2:   {}",   m_features.sse2());
+    println!("  SSE1:   {}\n", m_features.sse());
+    
     // FMT
     match m_cpuid.cpu_info() {
         Some(fms) => {
