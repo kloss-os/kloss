@@ -134,7 +134,9 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
         // Enable global interrupts!
         asm!("sti" ::::"intel");
+
     }
+
     memory::test_paging(&mut frame_allocator);
     
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
