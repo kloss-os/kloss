@@ -7,6 +7,12 @@
 // http://sandpile.org/x86/cpuid.htm
 // PDF:s in google drive folder (simon)
 
+// Sub-modules
+mod features;
+
+// Used modules
+use self::features::{Features};
+
 // CONSTANTS FOR USING CPUID
 // -- BASIC
 
@@ -341,210 +347,6 @@ const MASK_BIT_30 : u32 = 0x1 << 30;
 const MASK_BIT_31 : u32 = 0x1 << 31;
 
 
-
-
-// Struct for listing CPU flags
-pub struct Features {
-    // ECX Register
-
-    /// Hypervisor present
-    pub hv: bool,
-
-    /// RdRand available (instruction for hardware random number)
-    pub rdrand: bool,
-
-    /// VCVTPH2PS and VCVTPS2PH instructions available
-    pub f16c: bool,
-
-    /// Advanced vector extensions available
-    pub avx: bool,
-
-    /// Complementary flag for XSAVE (I believe)
-    // TODO: Look up OSXSAVE further
-    pub osxsave: bool,
-
-    /// Save processor extended state available
-    pub xsave: bool,
-
-    /// Advanced Enctyption Standard instruction set available
-    pub aes: bool,
-
-    /// Local APIC supports one-shot operation using TSC deadline value
-    pub tscd: bool,
-
-    /// If (intel?) POPCNT instruction is available
-    pub popcnt: bool,
-
-    /// Move Data After Swapping Bytes instruction available
-    pub movbe: bool,
-
-    /// x2APIC present
-    pub x2apic: bool,
-
-    /// SSE 4.2 supported
-    pub sse4_2: bool,
-
-    /// SSE 4.1 supported 
-    pub sse4_1: bool,
-    
-    /// Direct Cache Access
-    pub dca: bool,
-
-    /// Process Context Identifiers
-    pub pcid: bool,
-
-    // Bit 16 reserved
-
-    /// Performance Debug Capability MSR
-    pub pdcm: bool,
-
-    /// MISC_ENABLE.ETPRD
-    // TODO: Hitta info om denna
-    pub etprd: bool,
-
-    /// CMPXCHG16B instruction available
-    /// (Atomic compare and exchange on 16-byte values)
-    pub cx16: bool,
-
-    /// Fused multiply-add
-    pub fma: bool,
-
-    /// DEBUG_INTERFACE MSR for silicon debug
-    pub sdbg: bool,
-
-    /// Context ID: the L1 data cache can be set to adaptive- or shared mode
-    pub cid: bool,
-
-    /// Supplemental Streaming SIMD Extensions 3
-    pub ssse3: bool,
-
-    /// Thermal Monitor 2
-    pub tm2: bool,
-
-    /// Enhanced SpeedStep
-    pub est: bool,
-
-    /// Safer mode trusted execution technology (Intel TXT, formerly known as
-    /// LaGrande Technology) [Trusted Platform Module (TPM) Support]
-    pub smx: bool,
-
-    /// Hardware virtualization (Intel VMX)
-    pub vmx: bool,
-
-    /// CPL-qualified Debug Store 
-    pub dscpl: bool,
-
-    /// Monitor/MWait
-    // TODO: Find mor info on `mon` flag
-    pub mon: bool,
-
-    /// 64/bit Debug Store
-    pub dtes64: bool,
-
-    /// PCLMUL Instruction set available (Intel Carry-Less
-    /// Multiplication Instrucion)  
-    pub pclmul: bool,
-
-    /// SSE 3 support
-    pub sse3: bool,
-    
-    // EDX register
-    
-    /// Pending Break Event
-    pub pbe: bool,
-
-    /// Intel Itanium Architecture 64-bit (not same as Intel x86_64)
-    pub ia64: bool,
-
-    /// Thermal Monitor 1
-    pub tm1: bool,
-
-    /// Hyper Threading Technology
-    pub htt: bool,
-
-    /// SelfSnoop
-    pub ss: bool,
-
-    /// SSE 2 support
-    pub sse2: bool,
-
-    /// SSE support
-    pub sse: bool,
-
-    /// FXSAVE/FXRSTOR available
-    pub fxsr: bool,
-
-    /// MultiMedia eXtensions
-    pub mmx: bool,
-
-    /// ACPI via MSR (temperatire monitoring, clock speed modulation)
-    pub acpi: bool,
-
-    /// Debug Trace and EMON Store MSRs
-    pub dtes: bool,
-
-    // Bit 20 reserved
-
-    /// CLFLUSH (Cache Line Flush) instruction available
-    pub clfl: bool,
-
-    /// Processor Serial Number
-    pub psn: bool,
-
-    /// 36-bit Page Size Extension available
-    pub pse36: bool,
-
-    /// Page Attribute Table
-    pub pat: bool,
-
-    /// CMOV instructions supported (Conditional Move)
-    pub cmov: bool,
-
-    /// Machine Check Architecture
-    pub mca: bool,
-
-    /// Page Global Enable *global bit in PDEs and PTEs)
-    pub pge: bool,
-
-    /// Memory Type Range Registers
-    pub mtrr: bool,
-
-    /// SYSENTER/SYSEXIT instructions supported
-    pub sep: bool,
-
-    // Bit 10 reserved
-
-    /// Onboard APIC present
-    pub apic: bool,
-
-    /// CMPXCHG8 instruction (64-bit compare-and-swap) supported
-    pub cx8: bool,
-
-    /// Machine Check Exception
-    pub mce: bool,
-
-    /// Physical Address Extensoins (Support for >4GB RAM)
-    pub pae: bool,
-
-    /// Model-Specific Registers (RDMSR/WRMSR instructions supported)
-    pub msr: bool,
-
-    /// Time Stamp Counter
-    pub tsc: bool,
-
-    /// Page Size Extensions (4MB memory pages)
-    pub pse: bool,
-
-    /// Debugging Extensions (CR4.DE)
-    pub de: bool,
-
-    /// Virtual Mode Extensions (8086 mode)
-    pub vme: bool,
-
-    /// Onboard FPU (Floating Point Unit)
-    pub fpu: bool
-}
-
 /// Struct for processor type/family/model/stepping
 pub struct CPUModel {
     /// Processor type (2-bit encoded)
@@ -577,6 +379,7 @@ pub struct CPUModel {
     pub clflush:  u8
 
 }
+
 
 /// Struct for keeping tab on highest available
 /// option for current CPU.
@@ -739,84 +542,58 @@ impl CPUID {
     }
 
     /// Get feature list
-    pub fn features(&self) -> Option<Features> {
+    pub fn features(&self) -> Features {
+        let basic_ecx;
+        let basic_edx;
+
+        // Basic flags
         match self.get(BASIC_FMS_FLAGS, self.basic_limit) {
             Some((_,_,c,d)) => {
                 // Call was OK, filter out values
-                Some(Features {
-                    hv:      (c & MASK_BIT_31) > 0,
-                    rdrand:  (c & MASK_BIT_30) > 0,
-                    f16c:    (c & MASK_BIT_29) > 0,
-                    avx:     (c & MASK_BIT_28) > 0,
-                    osxsave: (c & MASK_BIT_27) > 0,
-                    xsave:   (c & MASK_BIT_26) > 0,
-                    aes:     (c & MASK_BIT_25) > 0,
-                    tscd:    (c & MASK_BIT_24) > 0,
-                    popcnt:  (c & MASK_BIT_23) > 0,
-                    movbe:   (c & MASK_BIT_22) > 0,
-                    x2apic:  (c & MASK_BIT_21) > 0,
-                    sse4_2:  (c & MASK_BIT_20) > 0,
-                    sse4_1:  (c & MASK_BIT_19) > 0,
-                    dca:     (c & MASK_BIT_18) > 0,
-                    pcid:    (c & MASK_BIT_17) > 0,
-                    // Bit 16 reserved
-                    pdcm:    (c & MASK_BIT_15) > 0,
-                    etprd:   (c & MASK_BIT_14) > 0,
-                    cx16:    (c & MASK_BIT_13) > 0,
-                    fma:     (c & MASK_BIT_12) > 0,
-                    sdbg:    (c & MASK_BIT_11) > 0,
-                    cid:     (c & MASK_BIT_10) > 0,
-                    ssse3:   (c & MASK_BIT_9)  > 0,
-                    tm2:     (c & MASK_BIT_8)  > 0,
-                    est:     (c & MASK_BIT_7)  > 0,
-                    smx:     (c & MASK_BIT_6)  > 0,
-                    vmx:     (c & MASK_BIT_5)  > 0,
-                    dscpl:   (c & MASK_BIT_4)  > 0,
-                    mon:     (c & MASK_BIT_3)  > 0,
-                    dtes64:  (c & MASK_BIT_2)  > 0,
-                    pclmul:  (c & MASK_BIT_1)  > 0,
-                    sse3:    (c & MASK_BIT_0)  > 0,
-                    
-                    // Snd register
-                    pbe:   (d & MASK_BIT_31) > 0,
-                    ia64:  (d & MASK_BIT_30) > 0,
-                    tm1:   (d & MASK_BIT_29) > 0,
-                    htt:   (d & MASK_BIT_28) > 0,
-                    ss:    (d & MASK_BIT_27) > 0,
-                    sse2:  (d & MASK_BIT_26) > 0,
-                    sse:   (d & MASK_BIT_25) > 0,
-                    fxsr:  (d & MASK_BIT_24) > 0,
-                    mmx:   (d & MASK_BIT_23) > 0,
-                    acpi:  (d & MASK_BIT_22) > 0,
-                    dtes:  (d & MASK_BIT_21) > 0,
-                    // Bit 20 reserved
-                    clfl:  (d & MASK_BIT_19) > 0,
-                    psn:   (d & MASK_BIT_18) > 0,
-                    pse36: (d & MASK_BIT_17) > 0,
-                    pat:   (d & MASK_BIT_16) > 0,
-                    cmov:  (d & MASK_BIT_15) > 0,
-                    mca:   (d & MASK_BIT_14) > 0,
-                    pge:   (d & MASK_BIT_13) > 0,
-                    mtrr:  (d & MASK_BIT_12) > 0,
-                    sep:   (d & MASK_BIT_11) > 0,
-                    // Bit 10 reserved
-                    apic:  (d & MASK_BIT_9) > 0,
-                    cx8:   (d & MASK_BIT_8) > 0,
-                    mce:   (d & MASK_BIT_7) > 0,
-                    pae:   (d & MASK_BIT_6) > 0,
-                    msr:   (d & MASK_BIT_5) > 0,
-                    tsc:   (d & MASK_BIT_4) > 0,
-                    pse:   (d & MASK_BIT_3) > 0,
-                    de:    (d & MASK_BIT_2) > 0,
-                    vme:   (d & MASK_BIT_1) > 0,
-                    fpu:   (d & MASK_BIT_0) > 0,
-                })
+                basic_ecx = c;
+                basic_edx = d;
             },
             None => {
-                None
+                basic_ecx = 0;
+                basic_edx = 0;
             }
         }
+
+        let basic2_ebx;
+        let basic2_ecx;
         
+        // Basic2 flags
+        match self.get(BASIC_FLAGS, self.basic_limit) {
+            Some((_,b,c,_)) => {
+                // Call was OK, filter out values
+                basic2_ebx = b;
+                basic2_ecx = c;
+            },
+            None => {
+                basic2_ebx = 0;
+                basic2_ecx = 0;
+            }
+        }
+
+        let ext_ecx;
+        let ext_edx;
+
+        // Extended flags
+        match self.get(EXT_FMS_FLAGS, self.basic_limit) {
+            Some((_,_,c,d)) => {
+                // Call was OK, filter out values
+                ext_ecx = c;
+                ext_edx = d;
+            },
+            None => {
+                ext_ecx = 0;
+                ext_edx = 0;
+            }
+        }
+
+        Features::new(basic_ecx, basic_edx, basic2_ebx, basic2_ecx,
+        ext_ecx, ext_edx)
+
     }
 
     /// Call CPUID using supplied option, only
