@@ -203,8 +203,10 @@ p2_table:
     resb 4096
 stack_bottom:
     ;; Reserve 2 MB stack.   Phills guide säger 4096 * 2 här              
-    ;; Changed from 16384 to 4096 * 2 
-    resb 4096 * 2
+    ;; Changed from 16384 to 4096 * 2
+    ;; Edit (Simon): Increased to 4096 * 2 * 2 as I ran out of stack
+    ;;               testing the CPUID module.
+    resb 4096 * 2 * 2
 stack_top:
 
 ;;; This is the global descriptor table. We need to set it up to be in

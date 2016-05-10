@@ -135,25 +135,39 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         // Enable global interrupts!
         asm!("sti" ::::"intel");
     }
+    memory::test_paging(&mut frame_allocator);
+    
+    memory::remap_the_kernel(&mut frame_allocator, boot_info);
+    
+    // Denna skit är tveksam
+    //frame_allocator.allocate_frame();
+    
+    println!("It did not crash!");
 
+
+    
     // TESTING CPUID MODULE
+
     use arch::x86_64::cpuid;
     let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
     
     // Basic info
     let (max,vid) = m_cpuid.basic_info();
     println!("\nCPUID BASE INFO:");
-    println!("  Max instruction: 0x{:x}\n  Vendor ID: {:?}\n", max, vid);
+    println!("  Max instruction: {}", max);
+    println!("  Vendor ID: {:?}", vid);
     m_cpuid.print_limits();
 
     // Flags
     let m_features = m_cpuid.features();
     println!("FEATURE TEST:");
-    println!("  SSE4.2: {}",   m_features.sse4_2());
-    println!("  SSE4.1: {}",   m_features.sse4_1());
-    println!("  SSE3:   {}",   m_features.sse3());
-    println!("  SSE2:   {}",   m_features.sse2());
-    println!("  SSE1:   {}\n", m_features.sse());
+    println!("  SSE4.2:  {}",   m_features.sse4_2());
+    println!("  SSE4.1:  {}",   m_features.sse4_1());
+    println!("  SSE3:    {}",   m_features.sse3());
+    println!("  SSE2:    {}",   m_features.sse2());
+    println!("  SSE1:    {}",   m_features.sse());
+    println!("  mmx [c]: {}",   m_features.mmx());
+    println!("  fpu [c]: {}\n", m_features.fpu());
     
     // FMT
     match m_cpuid.cpu_info() {
@@ -180,23 +194,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     }
 
-    // FEATURES
- //   match m_cpuid.features() {
- //       Some(cpuflags) => println!("SSE3: {}", cpuflags.sse3),
- //       None => println!("Flag command not available.")
- //   }
-
- //   println!("Ran {} recursive calls", call_recursively(10));
- //   println!("3! = {}", fac(3));
-
-    memory::test_paging(&mut frame_allocator);
-    
-    memory::remap_the_kernel(&mut frame_allocator, boot_info);
-    
-    // Denna skit är tveksam
-    //frame_allocator.allocate_frame();
-    
-    println!("It did not crash!");
+    // EOF TEST CPUID
     
     loop{}
 }
