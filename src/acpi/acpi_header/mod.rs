@@ -24,7 +24,7 @@ pub enum SDTtype {
 /// Verifies struct by summing all its bytes and comparing to 0
 pub unsafe fn verify_struct(address: usize) -> bool {
     let header = load_acpisdt_header(address);
-    return sum_bytes(address, header.length as usize) == 0;
+    return !(header.length < 0xFFFF) || sum_bytes(address, header.length as usize) == 0;
 }
 
 /// Casts an acpisdt header from an address
@@ -39,6 +39,7 @@ pub unsafe fn load_acpisdt_header(address: usize) -> &'static ACPISDTHeader {
 unsafe fn sum_bytes(start: usize, len: usize) -> u8 {
     let mut sum: u32 = 0;
 
+    println!("length: {}", len);
     for i in start..(start + len) {
         let current: u32 = *(i as *const u32) & 0xFF;
         sum = (sum + current) & 0xFF;
@@ -71,3 +72,5 @@ pub fn find_type(header: &'static ACPISDTHeader) -> Option<SDTtype> {
 
     return None;
 }
+
+

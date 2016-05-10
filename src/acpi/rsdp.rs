@@ -28,6 +28,30 @@ pub fn load_rsdp() -> Option<&'static RSDPdesc> {
     // Start by getting the ebda start address which is located at 0x40e
     // The address is a segmented 2-byte pointer
 
+
+    // It can also be located somewhere between the following addresses
+    let mbos_start: usize = 0x000E0000;
+    let mbos_end:   usize = 0x000FFFFF;
+    let mut current = mbos_start;
+
+    // Same as above, but in MBOS
+    while current <= mbos_end {
+        if let Some(rsdp) = unsafe {load_rsdp_addr(current)} {
+            // YES FOUND IT WOOOO
+            return Some(rsdp);
+        } else {
+            // Check next address, 16 bytes ahead!
+            current = current + 0x10;
+        }
+    }
+
+    return None;
+}
+
+
+/// Find _Extended BIOS Data Area_ (EBDA) starting address
+/// It is at maximum 1KB long, so end address is find_ebda_start + 0x400 -1
+pub fn find_ebda_start() -> usize {
     let ebda_start: usize;
     let ebda_ptr: *const u32;
 
@@ -46,42 +70,7 @@ pub fn load_rsdp() -> Option<&'static RSDPdesc> {
         ebda_start = (ebda_segment | ebda_offset) as usize;
     }
 
-
-    // EBDA is max 1 KB  long, so we can get the end address
-    let ebda_end = ebda_start + 0x400;
-
-
-    // Iterate over possible EBDA area
-    // Note that the identifier is on a 16-byte boundary
-    let mut current: usize = ebda_start;
-    while current <= ebda_end {
-        if let Some(rsdp) = unsafe {load_rsdp_addr(current)} {
-            // YES FOUND IT WOOOO
-            return Some(rsdp);
-        } else {
-            // Check next address, 16 bytes ahead!
-            current = current + 0x10;
-        }
-    }
-
-
-    // It can also be located somewhere between the following addresses
-    let mbos_start: usize = 0x000E0000;
-    let mbos_end:   usize = 0x000FFFFF;
-    current = mbos_start;
-
-    // Same as above, but in MBOS
-    while current <= mbos_end {
-        if let Some(rsdp) = unsafe {load_rsdp_addr(current)} {
-            // YES FOUND IT WOOOO
-            return Some(rsdp);
-        } else {
-            // Check next address, 16 bytes ahead!
-            current = current + 0x10;
-        }
-    }
-
-    return None;
+    return ebda_start;
 }
 
 

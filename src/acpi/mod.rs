@@ -3,8 +3,8 @@ use self::acpi_header::ACPISDTHeader;
 use core::mem;
 use core::intrinsics::{volatile_load, volatile_store};
 
-mod acpi_header;
-mod rsdp;
+pub mod acpi_header;
+pub mod rsdp;
 
 
 
@@ -14,11 +14,11 @@ mod rsdp;
 #[repr(C, packed)]
 pub struct RSDT {
     /// The header of the RSDT
-    header:     ACPISDTHeader,
+    pub header:     ACPISDTHeader,
     /// This is the first pointer in an array
     /// You can use the first pointer, along with .offset() method to increment by 32-bit boundary.
     /// The length of the array is given by rsdt.header.length - mem::size_of::<ACPISDTHeader>()
-    first_ptr:  u32,
+    pub first_ptr:  u32,
 }
 
 
@@ -30,7 +30,7 @@ pub struct RSDT {
 #[repr(C, packed)]
 pub struct MADT {
     /// ACPI SDT Header
-    header:     ACPISDTHeader,
+    pub header:     ACPISDTHeader,
     /// Local controller address
     local_ctrl: u32,
     /// Flags
@@ -69,13 +69,13 @@ pub struct LAPIC_entry {
 #[repr(C, packed)]
 pub struct IOAPIC_entry {
     /// Universal header
-    header:   IntCtrlHeader_entry,
+    pub header:   IntCtrlHeader_entry,
     /// I/O APIC's ID
     id:       u8,
     /// Reserved, value is 0 (_padding?_)
     reserved: u8,
     /// I/O APIC's Address
-    address:  u32,
+    pub address:  u32,
     /// Global System Interrupt Base
     gsib:     u32,
 
@@ -114,6 +114,72 @@ pub struct ISO_entry {
 }
 
 
+pub struct SDT_Addr {
+    pub rsdt_start: usize,
+    pub rsdt_end: usize,
+    pub lapic_ctrl: usize,
+    pub ioapic_start: usize,
+    pub ioapic_end: usize,
+}
+
+pub unsafe fn sdt_addr(rsdt: &'static RSDT) -> SDT_Addr {
+    let mut _rsdt_start  = rsdt as *const _ as usize;
+    let mut _rsdt_end    = rsdt as *const _ as usize + rsdt.header.length as usize;
+    let mut _lapic_ctrl = 0;
+    let mut _ioapic_start = 0;
+    let mut _ioapic_end = 0;
+
+
+    /*
+    let first: *const u16 = &rsdt.first_ptr;
+
+    let num_ptr = (rsdt.header.length
+                   - mem::size_of::<ACPISDTHeader>() as u32)
+                    / 4;
+
+    let mut i = 0;
+    while i < num_ptr {
+        let cur_addr = first.offset(i as isize);
+        let cur_head = &*(cur_addr as *const ACPISDTHeader);
+
+        if let Some(found_type) = acpi_header::find_type(cur_head) {
+            match found_type {
+                acpi_header::SDTtype::MADT => {
+                    let madt = &*(cur_addr as *const MADT);
+                    if let Some(ioapic) = load_ioapic_entry(madt) {
+                        _lapic_ctrl = madt.local_ctrl as usize;
+                        _ioapic_start = ioapic.address as usize;
+                        // PLZ look this up before PR
+                        _ioapic_end = _ioapic_start + 0xFF;
+                    }
+                },
+                acpi_header::SDTtype::RSDT => {},
+                _ => {},
+            }
+        } // Else unrecognized type!
+
+
+        i += cur_head.length / 4;
+    }
+    */
+
+    if let Some(madt) = unsafe { load_madt(&rsdt) } {
+        _lapic_ctrl = madt.local_ctrl as usize;
+
+        if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
+            _ioapic_start = ioapic.address as usize;
+            // PLZ look this up before PR
+            _ioapic_end = _ioapic_start + 0xFF;
+        }
+    }
+    SDT_Addr {  rsdt_start: _rsdt_start,
+                rsdt_end:   _rsdt_end,
+                lapic_ctrl: _lapic_ctrl,
+                ioapic_start:   _ioapic_start,
+                ioapic_end: _ioapic_end,
+    }
+
+}
 
 
 
@@ -163,6 +229,34 @@ pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     }
 
     return None;
+
+    /*
+    // Get first byte address
+    let start: *const u32 = &rsdt.first_ptr;
+
+    // Get amount of bytes in bound
+    let num_addr = (rsdt.header.length
+                    - mem::size_of::<ACPISDTHeader>() as u32) / 4;
+
+
+    // Iterate over bound
+    let mut i = 0;
+    while i < num_addr {
+        let cur_addr = start.offset(i as isize);
+        if acpi_header::verify_struct(cur_addr as usize) {// This should always happen
+            let cur_head = acpi_header::load_acpisdt_header(cur_addr as usize);
+            if acpi_header::find_type(cur_head) == Some(acpi_header::SDTtype::MADT) {
+                return Some(&*(cur_addr as *const MADT));
+            } else {
+                i += (cur_head.length / 4);
+            }
+        } else {
+            i += 1;
+        }
+    }
+
+    return None;
+    */
 }
 
 
@@ -290,12 +384,8 @@ unsafe fn read_ioapic(ioapicaddr: *mut u32, reg: u32) -> u32 {
     let iowin = (ioapicaddr as *const u32).offset(4);
 
     // Write the selected register to IOREGSEL
-    //volatile_store(ioapicaddr, reg);
-
-    //volatile_load( iowin )
-
-    *ioapicaddr = reg;
-    *iowin
+    volatile_store(ioapicaddr, reg);
+    volatile_load( iowin )
 }
 
 
@@ -367,38 +457,32 @@ unsafe fn remap_pic() {
 
 
 /// This is mainly for testing, should delete once we're sure of things
-pub fn get_rsdt() -> u8 {
+pub fn get_rsdt(rsdt: &'static RSDT) {
 
     unsafe { mask_pic_irq(); }
     unsafe { remap_pic(); }
-    unsafe { set_ioapic(0xFEC04400); }
+    unsafe { set_ioapic(0xFEC00000); }
 
-    if let Some(rsdt) = load_rsdt() {
-        println!("Loaded RSDT, length is 0x{:x}!", rsdt.header.length);
+    let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
+    println!("IOAPIC contains 0x{:x}", read );
 
+    if let Some(madt) = unsafe { load_madt(&rsdt) } {
+        println!("Loaded MADT");
+        unsafe { print_madt(&madt); }
 
-        if let Some(madt) = unsafe { load_madt(&rsdt) } {
-            println!("Loaded MADT");
-            unsafe { print_madt(&madt); }
+        if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
+            println!("Loaded I/O APIC!");
+            println!("ID: {:x}, Address: {:x}, Reserved {:x}, GSIB: {:x}",
+                    ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
 
-            if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
-                println!("Loaded I/O APIC!");
-                println!("ID: {:x}, Address: {:x}, Reserved {:x}, GSIB: {:x}",
-                        ioapic.id, ioapic.address, ioapic.reserved, ioapic.gsib);
-
-                unsafe { check_cpuid(); }
-                //println!("IOAPIC contains 0x{:x}", unsafe { read_ioapic(ioapic.address as *mut u32, 0xF0) });
-                println!("MSR 0x1b is 0x{:x}", unsafe{read_msr(0x1b)});
-            } else {
-                println!("Not loaded ioapic D:");
-            }
+            unsafe { check_cpuid(); }
+            println!("IOAPIC contains 0x{:x}", unsafe { read_ioapic(ioapic.address as *mut u32, 0xF0) });
+            println!("MSR 0x1b is 0x{:x}", unsafe{read_msr(0x1b)});
         } else {
-            println!("Not loaded madt!");
+            println!("Not loaded ioapic D:");
         }
-
-        return 0x1;
     } else {
-        println!("Didn't load rsdt!");
-        return 0x0;
+        println!("Not loaded madt!");
     }
+
 }
