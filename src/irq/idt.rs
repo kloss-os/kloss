@@ -5,7 +5,7 @@
 use super::dispatch::*;
 
 /// The number of expected entries in the IDT.
-const IDT_NUM_ENTRIES: usize = 256;
+pub const IDT_NUM_ENTRIES: usize = 256;
 
 /// Bitmask to pick out the lower 16 bits of a 64 bit integer.
 const LOWER_16_MASK_64: u64 = 0x000000000000ffff;

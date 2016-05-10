@@ -153,7 +153,6 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
 
 #[no_mangle]
 pub extern fn rust_interrupt_handler(intnr: usize) {
-    println!("Handled interrupt {}!", intnr);
     irq::entry(intnr);
 }
 
