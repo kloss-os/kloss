@@ -4,6 +4,8 @@
 //! practices, clarity, and use of high-level designs over raw
 //! performance.
 
+#![feature(concat_idents)]
+
 #![feature(lang_items)]
 #![no_std]
 
@@ -108,36 +110,11 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     println!("Setting up the IDT!");
     unsafe{
-        irq::idt::install();
-        let flags =   irq::idt::FLAG_TYPE_TRAP_GATE
-                    | irq::idt::FLAG_DPL_KERNEL_MODE
-                    | irq::idt::FLAG_GATE_ENABLED;
-
-
-        // Install interrupt handlers for *everything*!
-        for ev in 0..33 {
-            irq::idt::set_gate(ev, irq::general_exception_handler,
-                               irq::idt::SELECT_TARGET_PRIV_1, flags);
-        }
-
-        for iv in 33..256 {
-            irq::idt::set_gate(iv, irq::null_interrupt_handler,
-                               irq::idt::SELECT_TARGET_PRIV_1, flags);
-        }
-
-        irq::idt::set_gate(42, irq::isr_42,
-                           irq::idt::SELECT_TARGET_PRIV_1, flags);
-        irq::idt::set_gate(12, irq::isr_12,
-                           irq::idt::SELECT_TARGET_PRIV_1, flags);
-        irq::idt::set_gate(255, irq::isr_255,
-                           irq::idt::SELECT_TARGET_PRIV_1, flags);
-
-        set_system_isr!(3);
+        irq::install();
 
         asm!("int 42" ::::"intel");
-        asm!("int 12" ::::"intel");
+        asm!("int 128" ::::"intel");
         asm!("int 255" ::::"intel");
-        //int!(42);
 
         // Enable global interrupts!
         x86::irq::enable();
