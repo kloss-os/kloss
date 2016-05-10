@@ -8,7 +8,7 @@
 //! `irq::install()` to configure the CPU to use the provided
 //! interrupt descriptor table (IDT). This will install the module's
 //! default ISRs (Interrupt Service Routines) for every exception and
-//! interrupt. There is then two ways you can go about adding your own
+//! interrupt. There are then two ways you can go about adding your own
 //! ISRs:
 //!
 //! 1. Add them using `irq::idt::set_gate()`. This will override the
