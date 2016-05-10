@@ -63,516 +63,317 @@ impl Features {
 
     // -- 1st register
 
+    /// Hypervisor present
     pub fn hv(&self) -> bool {
         (self.basic.0 & MASK_BIT_31) > 0
     }
 
-
+    /// RdRand available (instruction for hardware random number)
     pub fn rdrand(&self) -> bool {
         (self.basic.0 & MASK_BIT_30) > 0
     }
 
-
+    /// VCVTPH2PS and VCVTPS2PH instructions available
     pub fn f16c(&self) -> bool {
         (self.basic.0 & MASK_BIT_29) > 0
     }
 
-
+    /// Advanced vector extensions available
     pub fn avx(&self) -> bool {
         (self.basic.0 & MASK_BIT_28) > 0
     }
 
-
+    /// Complementary flag for XSAVE (I believe)
+    // TODO: Look up OSXSAVE further
     pub fn osxsave(&self) -> bool {
         (self.basic.0 & MASK_BIT_27) > 0
     }
 
-
+    /// Save processor extended state available
     pub fn xsave(&self) -> bool {
         (self.basic.0 & MASK_BIT_26) > 0
     }
 
-    
+    /// Advanced Enctyption Standard instruction set available
     pub fn aes(&self) -> bool {
         (self.basic.0 & MASK_BIT_25) > 0
     }
 
-    
+    /// Local APIC supports one-shot operation using TSC deadline value
     pub fn tscd(&self) -> bool {
         (self.basic.0 & MASK_BIT_24) > 0
     }
 
-
+    /// If (intel?) POPCNT instruction is available
     pub fn popcnt(&self) -> bool {
         (self.basic.0 & MASK_BIT_23) > 0
     }
 
-
+    /// Move Data After Swapping Bytes instruction available
     pub fn movbe(&self) -> bool {
         (self.basic.0 & MASK_BIT_22) > 0
     }
 
-
+    /// x2APIC present
     pub fn x2apic(&self) -> bool {
         (self.basic.0 & MASK_BIT_21) > 0
     }
 
-
+    /// SSE 4.2 supported
     pub fn sse4_2(&self) -> bool {
         (self.basic.0 & MASK_BIT_20) > 0
     }
 
-
+    /// SSE 4.1 supported
     pub fn sse4_1(&self) -> bool {
         (self.basic.0 & MASK_BIT_19) > 0
     }
 
-
+    /// Direct Cache Access
     pub fn dca(&self) -> bool {
         (self.basic.0 & MASK_BIT_18) > 0
     }
 
-
+    /// Process Context Identifiers
     pub fn pcid(&self) -> bool {
         (self.basic.0 & MASK_BIT_17) > 0
     }
     
-
+    /// Performance Debug Capability MSR
     pub fn pdcm(&self) -> bool {
         (self.basic.0 & MASK_BIT_15) > 0
     }
 
-
+    /// MISC_ENABLE.ETPRD
+    // TODO: Hitta info om denna
     pub fn etprd(&self) -> bool {
         (self.basic.0 & MASK_BIT_14) > 0
     }
 
-
+    /// CMPXCHG16B instruction available
+    /// (Atomic compare and exchange on 16-byte values)
     pub fn cx16(&self) -> bool {
         (self.basic.0 & MASK_BIT_13) > 0
     }
 
-
+    /// Fused multiply-add
     pub fn fma(&self) -> bool {
         (self.basic.0 & MASK_BIT_12) > 0
     }
 
-
+    /// DEBUG_INTERFACE MSR for silicon debug
     pub fn sdbg(&self) -> bool {
         (self.basic.0 & MASK_BIT_11) > 0
     }
 
-
+    /// Context ID: the L1 data cache can be set to adaptive- or shared mode
     pub fn cid(&self) -> bool {
         (self.basic.0 & MASK_BIT_10) > 0
     }
 
-
+    /// Supplemental Streaming SIMD Extensions 3
     pub fn ssse3(&self) -> bool {
         (self.basic.0 & MASK_BIT_9) > 0
     }
 
-
+    /// Thermal Monitor 2
     pub fn tm2(&self) -> bool {
         (self.basic.0 & MASK_BIT_8) > 0
     }
 
-
+    /// Enhanced SpeedStep
     pub fn est(&self) -> bool {
         (self.basic.0 & MASK_BIT_7) > 0
     }
 
-
+    /// Safer mode trusted execution technology (Intel TXT, formerly known as
+    /// LaGrande Technology) [Trusted Platform Module (TPM) Support]
     pub fn smx(&self) -> bool {
         (self.basic.0 & MASK_BIT_6) > 0
     }
 
-
+    /// Hardware virtualization (Intel VMX)
     pub fn vmx(&self) -> bool {
         (self.basic.0 & MASK_BIT_5) > 0
     }
 
+    /// CPL-qualified Debug Store 
     pub fn dscpl(&self) -> bool {
         (self.basic.0 & MASK_BIT_4) > 0
     }
 
-
+    /// Monitor/MWait
+    // TODO: Find mor info on `mon` flag
     pub fn mon(&self) -> bool {
         (self.basic.0 & MASK_BIT_3) > 0
     }
 
-
+    /// 64/bit Debug Store
     pub fn dtes64(&self) -> bool {
         (self.basic.0 & MASK_BIT_2) > 0
     }
 
-
+    /// PCLMUL Instruction set available (Intel Carry-Less
+    /// Multiplication Instrucion)
     pub fn pclmul(&self) -> bool {
         (self.basic.0 & MASK_BIT_1) > 0
     }
 
+    /// SSE 3 support
     pub fn sse3(&self) -> bool {
         (self.basic.0 & MASK_BIT_0) > 0
     }
 
     // -- 2nd register
 
+    /// Pending Break Event
     pub fn pbe(&self) -> bool {
         (self.basic.1 & MASK_BIT_31) > 0
     }
 
-
+    /// Intel Itanium Architecture 64-bit (not same as Intel x86_64)
     pub fn ia64(&self) -> bool {
         (self.basic.1 & MASK_BIT_30) > 0
     }
 
-
-    pub fn tml(&self) -> bool {
+    /// Thermal Monitor 1
+    pub fn tm1(&self) -> bool {
         (self.basic.1 & MASK_BIT_29) > 0
     }
 
-
+    /// Hyper Threading Technology
     pub fn htt(&self) -> bool {
         (self.basic.1 & MASK_BIT_28) > 0
     }
 
-
+    /// SelfSnoop
     pub fn ss(&self) -> bool {
         (self.basic.1 & MASK_BIT_27) > 0
     }
 
-
+    /// SSE 2 support
     pub fn sse2(&self) -> bool {
         (self.basic.1 & MASK_BIT_26) > 0
     }
 
-    
+    /// SSE support
     pub fn sse(&self) -> bool {
         (self.basic.1 & MASK_BIT_25) > 0
     }
 
-    
+    /// FXSAVE/FXRSTOR available
     pub fn fxsr(&self) -> bool {
         (self.basic.1 & MASK_BIT_24) > 0
     }
 
-
+    /// MultiMedia eXtensions
     pub fn mmx(&self) -> bool {
         (self.basic.1 & MASK_BIT_23) > 0
     }
 
-
+    /// ACPI via MSR (temperatire monitoring, clock speed modulation)
     pub fn acpi(&self) -> bool {
         (self.basic.1 & MASK_BIT_22) > 0
     }
 
-
+    /// Debug Trace and EMON Store MSRs
     pub fn dtes(&self) -> bool {
         (self.basic.1 & MASK_BIT_21) > 0
     }
 
-
+    /// CLFLUSH (Cache Line Flush) instruction available
     pub fn clfl(&self) -> bool {
         (self.basic.1 & MASK_BIT_19) > 0
     }
 
-
+    /// Processor Serial Number
     pub fn psn(&self) -> bool {
         (self.basic.1 & MASK_BIT_18) > 0
     }
 
-
+    /// 36-bit Page Size Extension available
     pub fn pse36(&self) -> bool {
         (self.basic.1 & MASK_BIT_17) > 0
     }
     
-
+    /// Page Attribute Table
     pub fn pat(&self) -> bool {
         (self.basic.1 & MASK_BIT_16) > 0
     }
 
-
+    /// CMOV instructions supported (Conditional Move)
     pub fn cmov(&self) -> bool {
         (self.basic.1 & MASK_BIT_15) > 0
     }
 
-
+    /// Machine Check Architecture
     pub fn mca(&self) -> bool {
         (self.basic.1 & MASK_BIT_14) > 0
     }
 
-
+    /// Page Global Enable *global bit in PDEs and PTEs)
     pub fn pge(&self) -> bool {
         (self.basic.1 & MASK_BIT_13) > 0
     }
 
-
+    /// Memory Type Range Registers
     pub fn mtrr(&self) -> bool {
         (self.basic.1 & MASK_BIT_12) > 0
     }
 
-
+    /// SYSENTER/SYSEXIT instructions supported
     pub fn sep(&self) -> bool {
         (self.basic.1 & MASK_BIT_11) > 0
     }
 
-
+    /// Onboard APIC present
     pub fn apic(&self) -> bool {
         (self.basic.1 & MASK_BIT_9) > 0
     }
 
-
+    /// CMPXCHG8 instruction (64-bit compare-and-swap) supported
     pub fn cx8(&self) -> bool {
         (self.basic.1 & MASK_BIT_8) > 0
     }
 
-
+    /// Machine Check Exception
     pub fn mce(&self) -> bool {
         (self.basic.1 & MASK_BIT_7) > 0
     }
 
-
+    /// Physical Address Extensoins (Support for >4GB RAM)
     pub fn pae(&self) -> bool {
         (self.basic.1 & MASK_BIT_6) > 0
     }
 
-
+    /// Model-Specific Registers (RDMSR/WRMSR instructions supported)
     pub fn msr(&self) -> bool {
         (self.basic.1 & MASK_BIT_5) > 0
     }
-
+    
+    /// Time Stamp Counter
     pub fn tsc(&self) -> bool {
         (self.basic.1 & MASK_BIT_4) > 0
     }
 
-
+    /// Page Size Extensions (4MB memory pages)
     pub fn pse(&self) -> bool {
         (self.basic.1 & MASK_BIT_3) > 0
     }
 
-
+    /// Debugging Extensions (CR4.DE)
     pub fn de(&self) -> bool {
         (self.basic.1 & MASK_BIT_2) > 0
     }
 
-
+    /// Virtual Mode Extensions (8086 mode)
     pub fn vme(&self) -> bool {
         (self.basic.1 & MASK_BIT_1) > 0
     }
-
+    
+    /// Onboard FPU (Floating Point Unit)
     pub fn fpu(&self) -> bool {
         (self.basic.1 & MASK_BIT_0) > 0
     }
 }
 
-
-/*
-   OLD STRUCT
-
-// Struct for listing CPU flags
-pub struct Features {
-    // ECX Register
-
-    /// Hypervisor present
-    pub hv: bool,
-
-    /// RdRand available (instruction for hardware random number)
-    pub rdrand: bool,
-
-    /// VCVTPH2PS and VCVTPS2PH instructions available
-    pub f16c: bool,
-
-    /// Advanced vector extensions available
-    pub avx: bool,
-
-    /// Complementary flag for XSAVE (I believe)
-    // TODO: Look up OSXSAVE further
-    pub osxsave: bool,
-
-    /// Save processor extended state available
-    pub xsave: bool,
-
-    /// Advanced Enctyption Standard instruction set available
-    pub aes: bool,
-
-    /// Local APIC supports one-shot operation using TSC deadline value
-    pub tscd: bool,
-
-    /// If (intel?) POPCNT instruction is available
-    pub popcnt: bool,
-
-    /// Move Data After Swapping Bytes instruction available
-    pub movbe: bool,
-
-    /// x2APIC present
-    pub x2apic: bool,
-
-    /// SSE 4.2 supported
-    pub sse4_2: bool,
-
-    /// SSE 4.1 supported 
-    pub sse4_1: bool,
-    
-    /// Direct Cache Access
-    pub dca: bool,
-
-    /// Process Context Identifiers
-    pub pcid: bool,
-
-    // Bit 16 reserved
-
-    /// Performance Debug Capability MSR
-    pub pdcm: bool,
-
-    /// MISC_ENABLE.ETPRD
-    // TODO: Hitta info om denna
-    pub etprd: bool,
-
-    /// CMPXCHG16B instruction available
-    /// (Atomic compare and exchange on 16-byte values)
-    pub cx16: bool,
-
-    /// Fused multiply-add
-    pub fma: bool,
-
-    /// DEBUG_INTERFACE MSR for silicon debug
-    pub sdbg: bool,
-
-    /// Context ID: the L1 data cache can be set to adaptive- or shared mode
-    pub cid: bool,
-
-    /// Supplemental Streaming SIMD Extensions 3
-    pub ssse3: bool,
-
-    /// Thermal Monitor 2
-    pub tm2: bool,
-
-    /// Enhanced SpeedStep
-    pub est: bool,
-
-    /// Safer mode trusted execution technology (Intel TXT, formerly known as
-    /// LaGrande Technology) [Trusted Platform Module (TPM) Support]
-    pub smx: bool,
-
-    /// Hardware virtualization (Intel VMX)
-    pub vmx: bool,
-
-    /// CPL-qualified Debug Store 
-    pub dscpl: bool,
-
-    /// Monitor/MWait
-    // TODO: Find mor info on `mon` flag
-    pub mon: bool,
-
-    /// 64/bit Debug Store
-    pub dtes64: bool,
-
-    /// PCLMUL Instruction set available (Intel Carry-Less
-    /// Multiplication Instrucion)  
-    pub pclmul: bool,
-
-    /// SSE 3 support
-    pub sse3: bool,
-    
-    // EDX register
-    
-    /// Pending Break Event
-    pub pbe: bool,
-
-    /// Intel Itanium Architecture 64-bit (not same as Intel x86_64)
-    pub ia64: bool,
-
-    /// Thermal Monitor 1
-    pub tm1: bool,
-
-    /// Hyper Threading Technology
-    pub htt: bool,
-
-    /// SelfSnoop
-    pub ss: bool,
-
-    /// SSE 2 support
-    pub sse2: bool,
-
-    /// SSE support
-    pub sse: bool,
-
-    /// FXSAVE/FXRSTOR available
-    pub fxsr: bool,
-
-    /// MultiMedia eXtensions
-    pub mmx: bool,
-
-    /// ACPI via MSR (temperatire monitoring, clock speed modulation)
-    pub acpi: bool,
-
-    /// Debug Trace and EMON Store MSRs
-    pub dtes: bool,
-
-    // Bit 20 reserved
-
-    /// CLFLUSH (Cache Line Flush) instruction available
-    pub clfl: bool,
-
-    /// Processor Serial Number
-    pub psn: bool,
-
-    /// 36-bit Page Size Extension available
-    pub pse36: bool,
-
-    /// Page Attribute Table
-    pub pat: bool,
-
-    /// CMOV instructions supported (Conditional Move)
-    pub cmov: bool,
-
-    /// Machine Check Architecture
-    pub mca: bool,
-
-    /// Page Global Enable *global bit in PDEs and PTEs)
-    pub pge: bool,
-
-    /// Memory Type Range Registers
-    pub mtrr: bool,
-
-    /// SYSENTER/SYSEXIT instructions supported
-    pub sep: bool,
-
-    // Bit 10 reserved
-
-    /// Onboard APIC present
-    pub apic: bool,
-
-    /// CMPXCHG8 instruction (64-bit compare-and-swap) supported
-    pub cx8: bool,
-
-    /// Machine Check Exception
-    pub mce: bool,
-
-    /// Physical Address Extensoins (Support for >4GB RAM)
-    pub pae: bool,
-
-    /// Model-Specific Registers (RDMSR/WRMSR instructions supported)
-    pub msr: bool,
-
-    /// Time Stamp Counter
-    pub tsc: bool,
-
-    /// Page Size Extensions (4MB memory pages)
-    pub pse: bool,
-
-    /// Debugging Extensions (CR4.DE)
-    pub de: bool,
-
-    /// Virtual Mode Extensions (8086 mode)
-    pub vme: bool,
-
-    /// Onboard FPU (Floating Point Unit)
-    pub fpu: bool
-}
-
-
-
-
-
-*/
