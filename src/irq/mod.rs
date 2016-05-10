@@ -33,8 +33,7 @@ pub mod idt;
 
 mod asm_wrappers;
 
-// FIXME: these should NOT BE PUBLIC
-pub use self::asm_wrappers::*;
+use self::asm_wrappers::*;
 
 mod dispatch;
 
@@ -57,8 +56,10 @@ pub use self::dispatch::entry;
 ///
 /// # Examples
 ///
-pub fn set_handler(vec: u32,
-                   f: unsafe fn(u32)) -> () {
+pub fn set_handler(vec: usize,
+                   f: unsafe fn(usize)) -> () {
+
+    unsafe {self::dispatch::set_handler(vec, f);}
 
 }
 
