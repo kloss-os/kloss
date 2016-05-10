@@ -110,6 +110,7 @@ impl ActivePageTable {
     /// Module that temporarily changes the recursive mapping. 
     /// It overwrites the 511th P4 entry and points it to the
     /// inactive table frame.
+    /// "It overwrites the 511th P4 entry and points it to the inactive table frame. Then it flushes the translation lookaside buffer (TLB), which still contains some old translations. We need to flush all pages that are part of the recursive mapping, so the easiest way is to flush the TLB completely.""
     pub fn with<F>(&mut self,
                    table: &mut InactivePageTable,
                    temporary_page: &mut temporary_page::TemporaryPage,
@@ -158,7 +159,7 @@ impl ActivePageTable {
 pub struct InactivePageTable {
     p4_frame: Frame,
 }
-/// Creates valid, inactive page tables that are zeroed and recursively maped.
+/// Creates valid, inactive page tables that are zeroed and recursively mapped.
 impl InactivePageTable {
     pub fn new(frame: Frame,
                active_table: &mut ActivePageTable,
@@ -238,10 +239,11 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
             mapper.identity_map(frame, PRESENT, allocator);
         }
     });
-    
+    // TODO: Delete when appropriate
     let old_table = active_table.switch(new_table);
     println!("NEW TABLE!!!");
-    
+
+    // TODO: Delete when appropriate
     let old_p4_page = Page::containing_address(old_table.p4_frame.start_address());
     active_table.unmap(old_p4_page, allocator);
     println!("guard page at {:#x}", old_p4_page.start_address());

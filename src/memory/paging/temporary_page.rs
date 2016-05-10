@@ -44,7 +44,7 @@ impl TemporaryPage {
         -> &mut Table<Level1> {
         unsafe { &mut *(self.map(frame, active_table) as *mut Table<Level1>) }
     }
-    /// Unmaps the temporary page in th active table.
+    /// Unmaps the temporary page in the active table.
     pub fn unmap(&mut self, active_table: &mut ActivePageTable){
         active_table.unmap(self.page, &mut self.allocator)
     }

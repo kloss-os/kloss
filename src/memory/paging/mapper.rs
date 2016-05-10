@@ -94,7 +94,7 @@ impl Mapper {
         let frame = allocator.allocate_frame().expect("out of memory");
         self.map_to(page, frame, flags, allocator)
     }
-    /// Identiti map the given frame with the provided flags.
+    /// Identity map the given frame with the provided flags.
     /// The free frame is allocated from the given 'FrameAllocator'
     pub fn identity_map<A>(&mut self, frame: Frame, flags: EntryFlags, allocator: &mut A)
         where A: FrameAllocator
@@ -119,5 +119,6 @@ impl Mapper {
         unsafe { ::x86::tlb::flush(page.start_address()) };
         // TODO free p(1,2,3) table if empty
         // allocator.deallocate_frame(frame);
+        // Phills egna, blir implementerat snart
     }
 }
