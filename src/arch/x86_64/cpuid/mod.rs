@@ -83,7 +83,8 @@ const BASIC_FREQ2     : u32 = 0x0000_0016;
 const BASIC_ATTR      : u32 = 0x0000_0017;
 
 
-// -- XENON PHI 
+// -- XENON PHI
+// Only xenon phi processors
 
 /// Maximum supported option
 const XENON_PHI_MAX   : u32 = 0x2000_0000;
@@ -111,7 +112,7 @@ const XENON_PHI_RES6  : u32 = 0x2000_0007; // Reserved
 
 
 // -- HYPERVISOR
-// Virtual processors etc. (it seems)
+// Virtual machines/processors like VMWare, Virtualbox, etc.
 
 /// Vendor information
 const HYPERVISOR_VENDOR    : u32 = 0x4000_0000;
@@ -238,6 +239,7 @@ const EXT_SME_SEV             : u32 = 0x8000_001f;
 
 
 // -- TRANSMETA
+// Only for Transmeta Processors
 
 /// Maximum supported transmeta option and vendor ID string
 const TRANSMETA_INFO        : u32 = 0x8086_0000;
@@ -266,6 +268,7 @@ const TRANSMETA_MHZ_MV      : u32 = 0x8086_0007;
 
 
 // -- CENTAUR
+// Only for Centaur Processors
 
 // Maximum supported option
 const CENTAUR_INFO      : u32 = 0xC000_0000;
@@ -302,6 +305,43 @@ const MASK_BYTE : u32 = 0xff;
 
 /// Mask half byte
 const MASK_HALF_BYTE : u32 = 0xf;
+
+// BIT MASKS
+const MASK_BIT_0  : u32 = 0x1;
+const MASK_BIT_1  : u32 = 0x1 << 1;
+const MASK_BIT_2  : u32 = 0x1 << 2;
+const MASK_BIT_3  : u32 = 0x1 << 3;
+const MASK_BIT_4  : u32 = 0x1 << 4;
+const MASK_BIT_5  : u32 = 0x1 << 5;
+const MASK_BIT_6  : u32 = 0x1 << 6;
+const MASK_BIT_7  : u32 = 0x1 << 7;
+const MASK_BIT_8  : u32 = 0x1 << 8;
+const MASK_BIT_9  : u32 = 0x1 << 9;
+const MASK_BIT_10 : u32 = 0x1 << 10;
+const MASK_BIT_11 : u32 = 0x1 << 11;
+const MASK_BIT_12 : u32 = 0x1 << 12;
+const MASK_BIT_13 : u32 = 0x1 << 13;
+const MASK_BIT_14 : u32 = 0x1 << 14;
+const MASK_BIT_15 : u32 = 0x1 << 15;
+const MASK_BIT_16 : u32 = 0x1 << 16;
+const MASK_BIT_17 : u32 = 0x1 << 17;
+const MASK_BIT_18 : u32 = 0x1 << 18;
+const MASK_BIT_19 : u32 = 0x1 << 19;
+const MASK_BIT_20 : u32 = 0x1 << 20;
+const MASK_BIT_21 : u32 = 0x1 << 21;
+const MASK_BIT_22 : u32 = 0x1 << 22;
+const MASK_BIT_23 : u32 = 0x1 << 23;
+const MASK_BIT_24 : u32 = 0x1 << 24;
+const MASK_BIT_25 : u32 = 0x1 << 25;
+const MASK_BIT_26 : u32 = 0x1 << 26;
+const MASK_BIT_27 : u32 = 0x1 << 27;
+const MASK_BIT_28 : u32 = 0x1 << 28;
+const MASK_BIT_29 : u32 = 0x1 << 29;
+const MASK_BIT_30 : u32 = 0x1 << 30;
+const MASK_BIT_31 : u32 = 0x1 << 31;
+
+
+
 
 // Struct for listing CPU flags
 pub struct Features {
@@ -703,74 +743,73 @@ impl CPUID {
         match self.get(BASIC_FMS_FLAGS, self.basic_limit) {
             Some((_,_,c,d)) => {
                 // Call was OK, filter out values
-                // TODO: Move all bitmasks to consts for single computation
                 Some(Features {
-                    hv:      (c & (0x1 << 31)) > 0,
-                    rdrand:  (c & (0x1 << 30)) > 0,
-                    f16c:    (c & (0x1 << 29)) > 0,
-                    avx:     (c & (0x1 << 28)) > 0,
-                    osxsave: (c & (0x1 << 27)) > 0,
-                    xsave:   (c & (0x1 << 26)) > 0,
-                    aes:     (c & (0x1 << 25)) > 0,
-                    tscd:    (c & (0x1 << 24)) > 0,
-                    popcnt:  (c & (0x1 << 23)) > 0,
-                    movbe:   (c & (0x1 << 22)) > 0,
-                    x2apic:  (c & (0x1 << 21)) > 0,
-                    sse4_2:  (c & (0x1 << 20)) > 0,
-                    sse4_1:  (c & (0x1 << 19)) > 0,
-                    dca:     (c & (0x1 << 18)) > 0,
-                    pcid:    (c & (0x1 << 17)) > 0,
+                    hv:      (c & MASK_BIT_31) > 0,
+                    rdrand:  (c & MASK_BIT_30) > 0,
+                    f16c:    (c & MASK_BIT_29) > 0,
+                    avx:     (c & MASK_BIT_28) > 0,
+                    osxsave: (c & MASK_BIT_27) > 0,
+                    xsave:   (c & MASK_BIT_26) > 0,
+                    aes:     (c & MASK_BIT_25) > 0,
+                    tscd:    (c & MASK_BIT_24) > 0,
+                    popcnt:  (c & MASK_BIT_23) > 0,
+                    movbe:   (c & MASK_BIT_22) > 0,
+                    x2apic:  (c & MASK_BIT_21) > 0,
+                    sse4_2:  (c & MASK_BIT_20) > 0,
+                    sse4_1:  (c & MASK_BIT_19) > 0,
+                    dca:     (c & MASK_BIT_18) > 0,
+                    pcid:    (c & MASK_BIT_17) > 0,
                     // Bit 16 reserved
-                    pdcm:    (c & (0x1 << 15)) > 0,
-                    etprd:   (c & (0x1 << 14)) > 0,
-                    cx16:    (c & (0x1 << 13)) > 0,
-                    fma:     (c & (0x1 << 12)) > 0,
-                    sdbg:    (c & (0x1 << 11)) > 0,
-                    cid:     (c & (0x1 << 10)) > 0,
-                    ssse3:   (c & (0x1 << 9))  > 0,
-                    tm2:     (c & (0x1 << 8))  > 0,
-                    est:     (c & (0x1 << 7))  > 0,
-                    smx:     (c & (0x1 << 6))  > 0,
-                    vmx:     (c & (0x1 << 5))  > 0,
-                    dscpl:   (c & (0x1 << 4))  > 0,
-                    mon:     (c & (0x1 << 3))  > 0,
-                    dtes64:  (c & (0x1 << 2))  > 0,
-                    pclmul:  (c & (0x1 << 1))  > 0,
-                    sse3:    (c & 0x1)         > 0,
+                    pdcm:    (c & MASK_BIT_15) > 0,
+                    etprd:   (c & MASK_BIT_14) > 0,
+                    cx16:    (c & MASK_BIT_13) > 0,
+                    fma:     (c & MASK_BIT_12) > 0,
+                    sdbg:    (c & MASK_BIT_11) > 0,
+                    cid:     (c & MASK_BIT_10) > 0,
+                    ssse3:   (c & MASK_BIT_9)  > 0,
+                    tm2:     (c & MASK_BIT_8)  > 0,
+                    est:     (c & MASK_BIT_7)  > 0,
+                    smx:     (c & MASK_BIT_6)  > 0,
+                    vmx:     (c & MASK_BIT_5)  > 0,
+                    dscpl:   (c & MASK_BIT_4)  > 0,
+                    mon:     (c & MASK_BIT_3)  > 0,
+                    dtes64:  (c & MASK_BIT_2)  > 0,
+                    pclmul:  (c & MASK_BIT_1)  > 0,
+                    sse3:    (c & MASK_BIT_0)  > 0,
                     
                     // Snd register
-                    pbe:   (d & (0x1 << 31)) > 0,
-                    ia64: (d & (0x1 << 30)) > 0,
-                    tm1:   (d & (0x1 << 29)) > 0,
-                    htt:   (d & (0x1 << 28)) > 0,
-                    ss:    (d & (0x1 << 27)) > 0,
-                    sse2:  (d & (0x1 << 26)) > 0,
-                    sse:   (d & (0x1 << 25)) > 0,
-                    fxsr:  (d & (0x1 << 24)) > 0,
-                    mmx:   (d & (0x1 << 23)) > 0,
-                    acpi:  (d & (0x1 << 22)) > 0,
-                    dtes:  (d & (0x1 << 21)) > 0,
+                    pbe:   (d & MASK_BIT_31) > 0,
+                    ia64:  (d & MASK_BIT_30) > 0,
+                    tm1:   (d & MASK_BIT_29) > 0,
+                    htt:   (d & MASK_BIT_28) > 0,
+                    ss:    (d & MASK_BIT_27) > 0,
+                    sse2:  (d & MASK_BIT_26) > 0,
+                    sse:   (d & MASK_BIT_25) > 0,
+                    fxsr:  (d & MASK_BIT_24) > 0,
+                    mmx:   (d & MASK_BIT_23) > 0,
+                    acpi:  (d & MASK_BIT_22) > 0,
+                    dtes:  (d & MASK_BIT_21) > 0,
                     // Bit 20 reserved
-                    clfl:  (d & (0x1 << 19)) > 0,
-                    psn:   (d & (0x1 << 18)) > 0,
-                    pse36: (d & (0x1 << 17)) > 0,
-                    pat:   (d & (0x1 << 16)) > 0,
-                    cmov:  (d & (0x1 << 15)) > 0,
-                    mca:   (d & (0x1 << 14)) > 0,
-                    pge:   (d & (0x1 << 13)) > 0,
-                    mtrr:  (d & (0x1 << 12)) > 0,
-                    sep:   (d & (0x1 << 11)) > 0,
+                    clfl:  (d & MASK_BIT_19) > 0,
+                    psn:   (d & MASK_BIT_18) > 0,
+                    pse36: (d & MASK_BIT_17) > 0,
+                    pat:   (d & MASK_BIT_16) > 0,
+                    cmov:  (d & MASK_BIT_15) > 0,
+                    mca:   (d & MASK_BIT_14) > 0,
+                    pge:   (d & MASK_BIT_13) > 0,
+                    mtrr:  (d & MASK_BIT_12) > 0,
+                    sep:   (d & MASK_BIT_11) > 0,
                     // Bit 10 reserved
-                    apic:  (d & (0x1 << 9)) > 0,
-                    cx8:   (d & (0x1 << 8)) > 0,
-                    mce:   (d & (0x1 << 7)) > 0,
-                    pae:   (d & (0x1 << 6)) > 0,
-                    msr:   (d & (0x1 << 5)) > 0,
-                    tsc:   (d & (0x1 << 4)) > 0,
-                    pse:   (d & (0x1 << 3)) > 0,
-                    de:    (d & (0x1 << 2)) > 0,
-                    vme:   (d & (0x1 << 1)) > 0,
-                    fpu:   (d & 0x1)        > 0,
+                    apic:  (d & MASK_BIT_9) > 0,
+                    cx8:   (d & MASK_BIT_8) > 0,
+                    mce:   (d & MASK_BIT_7) > 0,
+                    pae:   (d & MASK_BIT_6) > 0,
+                    msr:   (d & MASK_BIT_5) > 0,
+                    tsc:   (d & MASK_BIT_4) > 0,
+                    pse:   (d & MASK_BIT_3) > 0,
+                    de:    (d & MASK_BIT_2) > 0,
+                    vme:   (d & MASK_BIT_1) > 0,
+                    fpu:   (d & MASK_BIT_0) > 0,
                 })
             },
             None => {
