@@ -35,7 +35,7 @@ const MASK_BIT_29 : u32 = 0x1 << 29;
 const MASK_BIT_30 : u32 = 0x1 << 30;
 const MASK_BIT_31 : u32 = 0x1 << 31;
 
-
+/// Class for handling Feature Flags
 pub struct Features {
     // Basic features
     /// Primary basic feature flags

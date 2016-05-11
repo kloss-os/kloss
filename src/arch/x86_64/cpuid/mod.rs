@@ -381,8 +381,7 @@ pub struct CPUModel {
 }
 
 
-/// Struct for keeping tab on highest available
-/// option for current CPU.
+/// Struct/Class for using CPUID
 pub struct CPUID {
     /// Highest option available in call to Basic CPUID
     basic_limit: u32,
