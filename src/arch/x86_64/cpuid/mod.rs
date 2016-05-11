@@ -350,6 +350,7 @@ const MASK_BIT_31 : u32 = 0x1 << 31;
 /// Struct for processor type/family/model/stepping
 pub struct CPUModel {
     /// Processor type (2-bit encoded)
+    ///
     /// 0 - Primary processor,
     /// 1 - Overdrive processor,
     /// 2 - Secondary processor (for MP),
@@ -370,6 +371,13 @@ pub struct CPUModel {
     pub stepping: u8,
     
     /// Logical processor count
+    ///
+    /// Oddly numbered:
+    /// 0 - 1 core
+    /// 1 - 1 core (probably)
+    /// 2 - 2 cores
+    /// ...
+    /// n = n cores
     pub cpu_cnt:  u8,
 
     /// The (fixed) default APIC ID
