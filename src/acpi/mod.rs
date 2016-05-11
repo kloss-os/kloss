@@ -406,6 +406,29 @@ unsafe fn read_ioapic(ioapicaddr: *mut u32, reg: u32) -> u32 {
 }
 
 
+unsafe fn print_ioreg(ioapicaddr: *mut u32) {
+    let id  = read_ioapic(ioapicaddr, 0x00);
+    let ver = read_ioapic(ioapicaddr, 0x01);
+    let arb = read_ioapic(ioapicaddr, 0x02);
+
+    println!("IOAPIC ID: {:x}, VER: {:x}, ARB: {:x}",
+             id, ver, arb);
+
+    let mut redtable: [u32; 64] = [0; 64];
+    for i in 0x10..0x3F {
+        redtable[i] = read_ioapic(ioapicaddr, i as u32);
+    }
+
+    let mut i = 0;
+    while i < 64 {
+        println!("Red {}: {:x}_{:}, Red {}: {:x}_{:}",
+                 i, redtable[i], redtable[i+1],
+                 i+2, redtable[i+2], redtable[i+3]);
+        i += 4
+
+    }
+}
+
 
 
 
@@ -482,6 +505,7 @@ pub fn get_rsdt(rsdt: &'static RSDT) {
 
     let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
     println!("IOAPIC contains 0x{:x}", read );
+    unsafe {print_ioreg(0xFEC00000 as *mut u32);}
 
     if let Some(madt) = unsafe { load_madt(rsdt) } {
         println!("Loaded MADT");
