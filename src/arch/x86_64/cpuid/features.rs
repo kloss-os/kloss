@@ -49,12 +49,12 @@ pub struct Features {
 impl Features {
     /// Creates a new Features object
     pub fn new(basic_ecx: u32, basic_edx: u32,
-               basic2_ecx: u32, basic2_edx: u32,
+               basic2_ebx: u32, basic2_ecx: u32,
                ext_ecx: u32, ext_edx: u32
     ) -> Features {
         Features {
             basic:  (basic_ecx, basic_edx),
-            basic2: (basic_ecx, basic_edx),
+            basic2: (basic2_ebx, basic2_ecx),
             ext:    (ext_ecx, ext_edx)
         } 
     }
@@ -293,6 +293,7 @@ impl Features {
     }
 
     /// SYSENTER/SYSEXIT instructions supported
+    // TODO: Merge with AMD specific SEP/flag in ext?
     pub fn sep(&self) -> bool {
         (self.basic.1 & MASK_BIT_11) > 0
     }
@@ -302,82 +303,82 @@ impl Features {
 
     // ---- 1st register
 
-    /// AVX512VL
+    /// AVX-512 Vector Length extensions
     pub fn avx512vl(&self) -> bool {
         (self.basic2.0 & MASK_BIT_31) > 0
     }
 
-    /// AVX512BW
-    pub fn avx512nw(&self) -> bool {
+    /// AVX-512 Byte and Word instructions
+    pub fn avx512bw(&self) -> bool {
         (self.basic2.0 & MASK_BIT_30) > 0
     }
 
-    /// SHA
+    /// Intel SHA extensions
     pub fn sha(&self) -> bool {
         (self.basic2.0 & MASK_BIT_29) > 0
     }
 
-    /// AVX512CD
+    /// AVX-512 Conflict Detection instructions
     pub fn avx512cd(&self) -> bool {
         (self.basic2.0 & MASK_BIT_28) > 0
     }
 
-    /// AVX512ER
+    /// AVX-512 Exponential and Reciprocal instructions
     pub fn avx512er(&self) -> bool {
         (self.basic2.0 & MASK_BIT_27) > 0
     }
 
-    /// AVX512PF
+    /// AVX-512 PreFetch instructions
     pub fn avx512pf(&self) -> bool {
         (self.basic2.0 & MASK_BIT_26) > 0
     }
 
-    /// Processor Trace (basic CPUID 0x0000_0014)
+    /// Intel Processor Trace (basic CPUID 0x0000_0014)
     pub fn pt(&self) -> bool {
         (self.basic2.0 & MASK_BIT_25) > 0
     }
 
-    /// CLWB 
+    /// CLWB instruction
     pub fn clwb(&self) -> bool {
         (self.basic2.0 & MASK_BIT_24) > 0
     }
 
-    /// CLFLUSHOPT
+    /// CLFLUSHOPT instruction
     pub fn clflushopt(&self) -> bool {
         (self.basic2.0 & MASK_BIT_23) > 0
     }
 
-    /// PCOMMIT 
+    /// PCOMMIT instruction
     pub fn pcommit(&self) -> bool {
         (self.basic2.0 & MASK_BIT_22) > 0
     }
 
-    /// AVX512IFMA 
+    /// AVX-512 Integer Fused Multiply-Add instructions 
     pub fn avx512ifma(&self) -> bool {
         (self.basic2.0 & MASK_BIT_21) > 0
     }
 
-    /// SMAP (`CR4.SMAP`, `CLAC` and `STAC`)
+    /// Supervisor Mode Access Prevention (`CR4.SMAP`, `CLAC` and `STAC`)
     pub fn smap(&self) -> bool {
         (self.basic2.0 & MASK_BIT_20) > 0
     }
 
-    /// `ADXC` and `ADOX`
+    /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
     pub fn adx(&self) -> bool {
         (self.basic2.0 & MASK_BIT_19) > 0
     }
 
-    /// RDSEED
+    /// RDSEED instruction
     pub fn rdseed(&self) -> bool {
         (self.basic2.0 & MASK_BIT_18) > 0
     }
 
-    /// AVX512DQ
+    /// AVX-512 Duble- and Quadword instructions
     pub fn avx512dq(&self) -> bool {
         (self.basic2.0 & MASK_BIT_17) > 0
     }
 
-    /// AVX512F
+    /// AVX-512 Foundation
     pub fn avx512f(&self) -> bool {
         (self.basic2.0 & MASK_BIT_16) > 0
     }
@@ -387,12 +388,12 @@ impl Features {
         (self.basic2.0 & MASK_BIT_15) > 0
     }
 
-    /// MPX
+    /// Intel Memory Protection Extensions
     pub fn mpx(&self) -> bool {
         (self.basic2.0 & MASK_BIT_14) > 0
     }
 
-    /// `FP_CS` and `FP_DS` always saved as `0x0000`
+    /// `FPU CS` and `FPU DS` deprecated (always saved as 0x0)
     pub fn fpcsds(&self) -> bool {
         (self.basic2.0 & MASK_BIT_13) > 0
     }
@@ -401,13 +402,14 @@ impl Features {
     pub fn pqm(&self) -> bool {
         (self.basic2.0 & MASK_BIT_12) > 0
     }
-
+    
+    /// Transactional Synchronization Extensions
     /// `XBEGIN`, `XABORT`, `XEND`, `XTEST`, `DR7.RTM`, `DR6.RTM`
     pub fn rtm(&self) -> bool {
         (self.basic2.0 & MASK_BIT_11) > 0
     }
 
-    /// INVPCID
+    /// INVPCID instruction
     pub fn invpcid(&self) -> bool {
         (self.basic2.0 & MASK_BIT_10) > 0
     }
@@ -417,12 +419,12 @@ impl Features {
         (self.basic2.0 & MASK_BIT_9) > 0
     }
 
-    /// BMI2
+    /// Bit Manipulation Instruction-set 2
     pub fn bmi2(&self) -> bool {
         (self.basic2.0 & MASK_BIT_8) > 0
     }
 
-    /// CR4.SMEP
+    /// Supervisor-Mode Execution Prevention (CR4.SMEP)
     pub fn smep(&self) -> bool {
         (self.basic2.0 & MASK_BIT_7) > 0
     }
@@ -432,21 +434,23 @@ impl Features {
         (self.basic2.0 & MASK_BIT_6) > 0
     }
 
-    /// AVX2 (including VSIB)
+    /// Advanced Vector eXtensions 2 (including VSIB)
     pub fn avx2(&self) -> bool {
         (self.basic2.0 & MASK_BIT_5) > 0
     }
 
+    /// Transactional Synchronization Extensions
     /// `XAQUIRE:`, `XRELEASE:`, `XTEST`
     pub fn hle(&self) -> bool {
         (self.basic2.0 & MASK_BIT_4) > 0
     }
 
-    /// BMI1 and TZCNT
+    /// Bit Manipulation Instruction-set 1 (and TZCNT)
     pub fn bmi1(&self) -> bool {
         (self.basic2.0 & MASK_BIT_3) > 0
     }
 
+    /// Software Guard Extensions
     /// `CR4.SEE`, `PRMRR`, `ENCLS` and `ENCLU`, basic CPUID level `0x0000_0012`
     pub fn sgx(&self) -> bool {
         (self.basic2.0 & MASK_BIT_2) > 0
@@ -457,6 +461,7 @@ impl Features {
         (self.basic2.0 & MASK_BIT_1) > 0
     }
 
+    /// Access to base of %fs and %gs
     /// `CR4.FSGSBASE` and `[RD|WR][FS|GS]BASE`
     pub fn fsgsbase(&self) -> bool {
         (self.basic2.0 & MASK_BIT_0) > 0
@@ -470,7 +475,7 @@ impl Features {
         (self.basic2.1 & MASK_BIT_30) > 0
     }
 
-    /// RDPID, TSC_AUX
+    /// `RDPID`, `TSC_AUX`
     pub fn rdpid(&self) -> bool {
         (self.basic2.1 & MASK_BIT_22) > 0
     }
@@ -480,7 +485,7 @@ impl Features {
         (self.basic2.1 & MASK_BIT_4) > 0
     }
 
-    /// PKU
+    /// PKU: software support for pkeys. Reflects setting of `CR4.PKE`
     pub fn pku(&self) -> bool {
         (self.basic2.1 & MASK_BIT_3) > 0
     }
@@ -490,12 +495,12 @@ impl Features {
         (self.basic2.1 & MASK_BIT_2) > 0
     }
 
-    /// AVX512VBMI
+    /// AVX-512 Vector Bit Manipulation Instructions
     pub fn avx512vbmi(&self) -> bool {
         (self.basic2.1 & MASK_BIT_1) > 0
     }
 
-    /// PREFETCHWT1
+    /// PREFETCHWT1 instruction
     pub fn prefetchwt1(&self) -> bool {
         (self.basic2.1 & MASK_BIT_0) > 0
     }
@@ -515,7 +520,7 @@ impl Features {
         (self.ext.0 & MASK_BIT_28) > 0
     }
 
-    /// performance TSC (MSR C001_0280h)
+    /// Performance TSC (MSR C001_0280h)
     pub fn perftsc(&self) -> bool {
         (self.ext.0 & MASK_BIT_27) > 0
     }
@@ -535,12 +540,13 @@ impl Features {
         (self.ext.0 & MASK_BIT_23) > 0
     }
 
-    /// Topology extensions: CPUID extended `0x8000_001D` and `0x8000_001E`
+    /// Topology extensions
+    /// CPUID extended `0x8000_001D` and `0x8000_001E`
     pub fn topx(&self) -> bool {
         (self.ext.0 & MASK_BIT_22) > 0
     }
 
-    /// TBM
+    /// Trailing Bit Manipulation
     pub fn tbm(&self) -> bool {
         (self.ext.0 & MASK_BIT_21) > 0
     }
@@ -550,17 +556,18 @@ impl Features {
         (self.ext.0 & MASK_BIT_19) > 0
     }
 
-    /// Translation cache extension, `EFER.TCE`
+    /// Translation cache extension
+    /// `EFER.TCE`
     pub fn tce(&self) -> bool {
         (self.ext.0 & MASK_BIT_17) > 0
     }
 
-    /// FMA4
+    /// 4 operands fused multiply-add
     pub fn fma4(&self) -> bool {
         (self.ext.0 & MASK_BIT_16) > 0
     }
 
-    /// LWP
+    /// Light Weigth Profiling
     pub fn lwp(&self) -> bool {
         (self.ext.0 & MASK_BIT_15) > 0
     }
@@ -570,12 +577,12 @@ impl Features {
         (self.ext.0 & MASK_BIT_13) > 0
     }
 
-    /// `SKINIT`, `STGI`, `DEV`
+    /// `SKINIT`/`STGI` instructions
     pub fn skinit(&self) -> bool {
         (self.ext.0 & MASK_BIT_12) > 0
     }
 
-    /// XOP (was also used going to be used for SSE5A)
+    /// XOP instruction set
     pub fn xop(&self) -> bool {
         (self.ext.0 & MASK_BIT_11) > 0
     }
@@ -590,12 +597,12 @@ impl Features {
         (self.ext.0 & MASK_BIT_9) > 0
     }
 
-    /// 3DNow!P : `PREFETCH` and `PREFETCHW` (K8 Rev G and K8L+)
+    /// `PREFETCH` and `PREFETCHW` instructions
     pub fn _3dnow_p(&self) -> bool {
         (self.ext.0 & MASK_BIT_8) > 0
     }
 
-    /// Misaligned SSE `MXCSR.MM`
+    /// Misaligned SSE mode `MXCSR.MM`
     pub fn msse(&self) -> bool {
         (self.ext.0 & MASK_BIT_7) > 0
     }
@@ -605,8 +612,8 @@ impl Features {
         (self.ext.0 & MASK_BIT_6) > 0
     }
 
-    /// LZCNT
-    pub fn lzcnt(&self) -> bool {
+    /// Advanced bit manipulation (`LZCNT` and `POPCNT`)
+    pub fn abm(&self) -> bool {
         (self.ext.0 & MASK_BIT_5) > 0
     }
 
@@ -615,22 +622,23 @@ impl Features {
         (self.ext.0 & MASK_BIT_4) > 0
     }
 
-    /// Extended APIC space (APIC_VER.EAS, EXT_APIC_FEAT, etc.)
+    /// Extended APIC space (`APIC_VER.EAS`, `EXT_APIC_FEAT`, etc.)
     pub fn eas(&self) -> bool {
         (self.ext.0 & MASK_BIT_3) > 0
     }
 
-    /// SVM
+    /// Secure Virtual Machine
     pub fn svm(&self) -> bool {
         (self.ext.0 & MASK_BIT_2) > 0
     }
 
+    /// Hyperthreading not valid
     /// CMP, HTT=1 indicates HTT (0) or CMP (1)
     pub fn cmp(&self) -> bool {
         (self.ext.0 & MASK_BIT_1) > 0
     }
 
-    /// LAHF and SAHF in PM64
+    /// `LAHF`/`SAHF` in Ling Mode
     pub fn ahf64(&self) -> bool {
         (self.ext.0 & MASK_BIT_0) > 0
     }
@@ -647,23 +655,24 @@ impl Features {
         (self.ext.1 & MASK_BIT_30) > 0
     }
 
-    /// AMD64/EM64T, Long Mode
+    /// Long Mode
     pub fn lm(&self) -> bool {
         (self.ext.1 & MASK_BIT_29) > 0
     }
 
+    /// RDTSCP instruction
     /// `TSC`, `TSC_AUX`, `RDTSCP`, `CR4.TSD`
     pub fn tscp(&self) -> bool {
         (self.ext.1 & MASK_BIT_27) > 0
     }
 
-    /// `PML3E.PS`
+    /// Gibibyte pages `PML3E.PS`
     pub fn pg1g(&self) -> bool {
         (self.ext.1 & MASK_BIT_26) > 0
     }
 
-    /// `EFER.FFXSR`
-    pub fn ffxsr(&self) -> bool {
+    /// `FXSAVE`/`FXSTOR` optimizations
+    pub fn fxsr_opt(&self) -> bool {
         (self.ext.1 & MASK_BIT_25) > 0
     }
 
@@ -674,21 +683,21 @@ impl Features {
         (self.ext.1 & MASK_BIT_24) > 0
     }
 
-    /*
-    TODO: Should be OR:ed with existing fxsr-flag IF processor
-          is determined to be AMD K7.
+    
+    //TODO: Should be OR:ed with existing fxsr-flag IF processor
+    //      is determined to be AMD K7.
 
     /// AMD K7 only: `FXSAVE`/`FXRSTOR`, `CR4.OSFXSR`
-    pub fn fxsr(&self) -> bool {
+    pub fn amd_k7_fxsr(&self) -> bool {
         (self.ext.1 & MASK_BIT_24) > 0
     }
-     */
-
+    
     // EOF THERE ARE TWO MENINGS TO THIS FLAG
 
-    /// AMD-specific MMX-SSE and SSE-MEM
+
+    /// Extended MMX
     // TODO: Merge cyrix- and amd mmx_ext?
-    pub fn amd_mmx_ext(&self) -> bool {
+    pub fn mmx_ext(&self) -> bool {
         (self.ext.1 & MASK_BIT_22) > 0
     }
 
@@ -697,7 +706,7 @@ impl Features {
         (self.ext.1 & MASK_BIT_20) > 0
     }
 
-    /// MP-capable
+    /// MultiProcessor capable
     ///
     /// Note: AMD K7 processors prior to CPUID=0662h may
     ///       report 0 even if they are MP-capable.
@@ -720,14 +729,25 @@ impl Features {
 
     // EOF THERE ARE TWO MENINGS TO THIS FLAG
 
-    /// SYSCALL/SYSRET, EFER/STAR MSRs 
-    // TODO: OR with existing flag (?) called `sep` but not same description
-    pub fn sep2(&self) -> bool {
+    /// `SYSCALL`/`SYSRET` instructions
+    pub fn syscall(&self) -> bool {
         (self.ext.1 & MASK_BIT_11) > 0
     }
 
 
     // COMBINED FLAGS
+
+    /// MultiMedia eXtensions
+    pub fn mmx(&self) -> bool {
+        ((self.basic.1 & MASK_BIT_23) > 0) |
+        ((self.ext.1 & MASK_BIT_23) > 0)
+    }
+
+    /// 36-bit Page Size Extension available
+    pub fn pse36(&self) -> bool {
+        ((self.basic.1 & MASK_BIT_17) > 0) |
+        ((self.ext.1 & MASK_BIT_17) > 0)
+    }
 
     /// CMOV instructions supported (Conditional Move)
     pub fn cmov(&self) -> bool {
@@ -754,6 +774,8 @@ impl Features {
     }
 
     /// Onboard APIC present
+    /// NOTE: If the APIC has been disabled, then the APIC feature
+    ///       flag will read as 0.
     pub fn apic(&self) -> bool {
         ((self.basic.1 & MASK_BIT_9) > 0) |
 	((self.ext.1 & MASK_BIT_9) > 0)
@@ -811,18 +833,6 @@ impl Features {
     pub fn fpu(&self) -> bool {
         ((self.basic.1 & MASK_BIT_0) > 0) |
 	((self.ext.1 & MASK_BIT_0) > 0)
-    }
-
-    /// MultiMedia eXtensions
-    pub fn mmx(&self) -> bool {
-        ((self.basic.1 & MASK_BIT_23) > 0) |
-        ((self.ext.1 & MASK_BIT_23) > 0)
-    }
-
-    /// 36-bit Page Size Extension available
-    pub fn pse36(&self) -> bool {
-        ((self.basic.1 & MASK_BIT_17) > 0) |
-        ((self.ext.1 & MASK_BIT_17) > 0)
     }
 
 }
