@@ -113,57 +113,129 @@ pub struct ISO_entry {
     flags:      u16,
 }
 
+pub struct SDT_Loc {
+    cur_start: usize,
+    cur_end: usize,
+
+    rsdt_current: usize,
+    rsdt_end: usize,
+
+    lapic_ctrl: usize,
+    ioapic_start:   usize,
+    ioapic_end: usize,
+}
+
+pub fn sdt_loc_dummy() -> SDT_Loc {
+    SDT_Loc {
+        cur_start: 0,
+        cur_end: 0,
+        rsdt_current: 0,
+        rsdt_end: 0,
+        lapic_ctrl: 0,
+        ioapic_start: 0,
+        ioapic_end: 0,
+    }
+}
+
+pub fn sdt_loc(rsdt: &'static RSDT) -> SDT_Loc {
+    SDT_Loc {
+        cur_start : rsdt as *const _ as usize,
+        cur_end : rsdt as *const _ as usize + rsdt.header.length as usize,
+        rsdt_current : rsdt as *const _ as usize,
+        rsdt_end : rsdt as *const _ as usize + rsdt.header.length as usize,
+        lapic_ctrl: 0,
+        ioapic_start: 0,
+        ioapic_end: 0,
+    }
+}
+
+impl Iterator for SDT_Loc {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<(usize, usize)> {
+        if self.cur_start != 0 {
+            let current = (self.cur_start, self.cur_end);
+
+            // Set next rsdt_current
+            // If we currently get rsdt address
+            if self.cur_start == self.rsdt_current {
+                self.rsdt_current += mem::size_of::<acpi_header::ACPISDTHeader>();
+
+                // If we haven't exhausted RSDT
+            } else if self.rsdt_current != 0 && self.rsdt_current < self.rsdt_end {
+                self.rsdt_current += 4;
+
+                // Otherwise, RSDT parsing is done!
+            } else {
+                self.rsdt_current = 0;
+            }
+
+
+            // Set next cur_start and cur_end
+            if self.rsdt_current != 0 && unsafe { acpi_header::verify_struct(*(self.rsdt_current as *const usize)) }  {
+                let next_header = unsafe { acpi_header::load_acpisdt_header(*(self.rsdt_current as *const usize)) };
+
+                if acpi_header::find_type(next_header) == Some(acpi_header::SDTtype::MADT) {
+                    let madt = unsafe { &*(*(self.rsdt_current as *const usize) as *const MADT) };
+
+                    self.lapic_ctrl = madt.local_ctrl as usize;
+
+                    if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
+                        self.ioapic_start = ioapic.address as usize;
+                        // PLZ look this up before PR
+                        self.ioapic_end = ioapic.address as usize + 0xFF;
+                    }
+                }
+
+                self.cur_start = next_header as *const _ as usize;
+                self.cur_end = self.cur_start + next_header.length as usize;
+            } else if self.lapic_ctrl != 0 {
+                self.cur_start = self.lapic_ctrl;
+                self.cur_end = self.lapic_ctrl;
+            } else if self.ioapic_start != 0 {
+                self.cur_start = self.ioapic_start;
+                self.cur_end = self.ioapic_end;
+            } else {
+                self.cur_start = 0;
+                self.cur_end = 0;
+            }
+
+            Some(current)
+        } else {
+            None
+        }
+
+
+    }
+}
+
+
 
 pub struct SDT_Addr {
     pub rsdt_start: usize,
-    pub rsdt_end: usize,
+    pub rsdt_end:   usize,
+    pub madt_start: usize,
+    pub madt_end:   usize,
     pub lapic_ctrl: usize,
-    pub ioapic_start: usize,
+    pub ioapic_start:   usize,
     pub ioapic_end: usize,
 }
 
 pub unsafe fn sdt_addr(rsdt: &'static RSDT) -> SDT_Addr {
-    let mut _rsdt_start  = rsdt as *const _ as usize;
-    let mut _rsdt_end    = rsdt as *const _ as usize + rsdt.header.length as usize;
-    let mut _lapic_ctrl = 0;
-    let mut _ioapic_start = 0;
-    let mut _ioapic_end = 0;
+    let mut _rsdt_start = rsdt as *const _ as usize;
+    let mut _rsdt_end   = rsdt as *const _ as usize + rsdt.header.length as usize;
+    let mut _madt_start     = 0;
+    let mut _madt_end       = 0;
+    let mut _lapic_ctrl     = 0;
+    let mut _ioapic_start   = 0;
+    let mut _ioapic_end     = 0;
 
 
-    /*
-    let first: *const u16 = &rsdt.first_ptr;
-
-    let num_ptr = (rsdt.header.length
-                   - mem::size_of::<ACPISDTHeader>() as u32)
-                    / 4;
-
-    let mut i = 0;
-    while i < num_ptr {
-        let cur_addr = first.offset(i as isize);
-        let cur_head = &*(cur_addr as *const ACPISDTHeader);
-
-        if let Some(found_type) = acpi_header::find_type(cur_head) {
-            match found_type {
-                acpi_header::SDTtype::MADT => {
-                    let madt = &*(cur_addr as *const MADT);
-                    if let Some(ioapic) = load_ioapic_entry(madt) {
-                        _lapic_ctrl = madt.local_ctrl as usize;
-                        _ioapic_start = ioapic.address as usize;
-                        // PLZ look this up before PR
-                        _ioapic_end = _ioapic_start + 0xFF;
-                    }
-                },
-                acpi_header::SDTtype::RSDT => {},
-                _ => {},
-            }
-        } // Else unrecognized type!
-
-
-        i += cur_head.length / 4;
-    }
-    */
 
     if let Some(madt) = unsafe { load_madt(&rsdt) } {
+        _madt_start = madt as *const _ as usize;
+        _madt_end = _madt_start + madt.header.length as usize;
+
         _lapic_ctrl = madt.local_ctrl as usize;
 
         if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
@@ -174,6 +246,8 @@ pub unsafe fn sdt_addr(rsdt: &'static RSDT) -> SDT_Addr {
     }
     SDT_Addr {  rsdt_start: _rsdt_start,
                 rsdt_end:   _rsdt_end,
+                madt_start: _madt_start,
+                madt_end:   _madt_end,
                 lapic_ctrl: _lapic_ctrl,
                 ioapic_start:   _ioapic_start,
                 ioapic_end: _ioapic_end,
@@ -210,6 +284,7 @@ pub fn load_rsdt() -> Option<&'static RSDT> {
 pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     // Make a raw pointer for the first SDT pointer
     let first: *const u32 = &rsdt.first_ptr;
+
     // Calculate amount of pointers
     let num_ptr = (rsdt.header.length
                    - mem::size_of::<ACPISDTHeader>() as u32)
@@ -229,34 +304,6 @@ pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     }
 
     return None;
-
-    /*
-    // Get first byte address
-    let start: *const u32 = &rsdt.first_ptr;
-
-    // Get amount of bytes in bound
-    let num_addr = (rsdt.header.length
-                    - mem::size_of::<ACPISDTHeader>() as u32) / 4;
-
-
-    // Iterate over bound
-    let mut i = 0;
-    while i < num_addr {
-        let cur_addr = start.offset(i as isize);
-        if acpi_header::verify_struct(cur_addr as usize) {// This should always happen
-            let cur_head = acpi_header::load_acpisdt_header(cur_addr as usize);
-            if acpi_header::find_type(cur_head) == Some(acpi_header::SDTtype::MADT) {
-                return Some(&*(cur_addr as *const MADT));
-            } else {
-                i += (cur_head.length / 4);
-            }
-        } else {
-            i += 1;
-        }
-    }
-
-    return None;
-    */
 }
 
 
@@ -464,9 +511,9 @@ pub fn get_rsdt(rsdt: &'static RSDT) {
     unsafe { set_ioapic(0xFEC00000); }
 
     let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
-    println!("IOAPIC contains 0x{:x}", read );
+    //println!("IOAPIC contains 0x{:x}", read );
 
-    if let Some(madt) = unsafe { load_madt(&rsdt) } {
+    if let Some(madt) = unsafe { load_madt(rsdt) } {
         println!("Loaded MADT");
         unsafe { print_madt(&madt); }
 

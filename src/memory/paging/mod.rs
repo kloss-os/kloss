@@ -180,45 +180,45 @@ impl InactivePageTable {
     }
 }
 
-pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt: Option<SDT_Addr>)
+pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_loc: SDT_Loc)
     where A: FrameAllocator{
     use core::ops::Range;
-    
-    let mut temporary_page = 
+
+    let mut temporary_page =
         TemporaryPage::new(Page { number: 0xcafebabe }, allocator);
-    
+
     let mut active_table = unsafe { ActivePageTable::new() };
     let mut new_table = {
         let frame = allocator.allocate_frame().expect("no more frames");
         InactivePageTable::new(frame, &mut active_table, &mut temporary_page)
     };
-    
+
     active_table.with(&mut new_table, &mut temporary_page, |mapper| {
         let elf_sections_tag = boot_info.elf_sections_tag()
             .expect("Memory map tag required");
-        
+
         // identity map the allocated kernel sections
         for section in elf_sections_tag.sections() {
             if !section.is_allocated() {
                 // section is not loaded to memory
                 continue;
             }
-            
+
             assert!(section.addr as usize % PAGE_SIZE == 0,
                     "sections need to be page aligned");
             println!("mapping section at addr: {:#x}, size: {:#x}",
                      section.addr,
                      section.size);
-            
+
             let flags = EntryFlags::from_elf_section_flags(section);
-            
+
             let start_frame = Frame::containing_address(section.start_address());
             let end_frame = Frame::containing_address(section.end_address() - 1);
             for frame in Frame::range_inclusive(start_frame, end_frame) {
                 mapper.identity_map(frame, flags, allocator);
             }
         }
-        
+
         // identity map the VGA text buffer
         let vga_buffer_frame = Frame::containing_address(0xb8000);
         mapper.identity_map(vga_buffer_frame, WRITABLE, allocator);
@@ -245,17 +245,34 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt: 
         }
         */
 
+        /*
         // identity map SDT addresses
         if let Some(ref sdt_addr) = sdt {
-            println!("mapping {:x} to {:x}, {:x} and {:x} to {:x}",
+            println!("mapping {:x} to {:x}, {:x} to {:x}, {:x} and {:x} to {:x}",
                      sdt_addr.rsdt_start, sdt_addr.rsdt_end,
+                     sdt_addr.madt_start, sdt_addr.madt_end,
                      sdt_addr.lapic_ctrl,
                      sdt_addr.ioapic_start, sdt_addr.ioapic_end);
+
+            let madt_start = Frame::containing_address(sdt_addr.madt_start);
+            let rsdt_end = Frame::containing_address(sdt_addr.rsdt_end - 1);
+            for frame in Frame::range_inclusive(madt_start, rsdt_end) {
+                mapper.identity_map(frame, PRESENT, allocator);
+            }
+
+            /*
+            let madt_start = Frame::containing_address(sdt_addr.madt_start);
+            let madt_end = Frame::containing_address(sdt_addr.madt_end - 1);
+            for frame in Frame::range_inclusive(madt_start, madt_end) {
+                mapper.identity_map(frame, PRESENT, allocator);
+            }
+
             let rsdt_start = Frame::containing_address(sdt_addr.rsdt_start);
-            let rsdt_end = Frame::containing_address(sdt_addr.rsdt_end);
+            let rsdt_end = Frame::containing_address(sdt_addr.rsdt_end - 1);
             for frame in Frame::range_inclusive(rsdt_start, rsdt_end) {
                 mapper.identity_map(frame, PRESENT, allocator);
             }
+            */
 
             let lapic_ctrl = Frame::containing_address(sdt_addr.lapic_ctrl);
             mapper.identity_map(lapic_ctrl, WRITABLE, allocator);
@@ -266,6 +283,16 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt: 
                 mapper.identity_map(frame, WRITABLE, allocator);
             }
         }
+        */
+
+        for (start, end) in sdt_loc.into_iter() {
+            let start_addr = Frame::containing_address(start);
+            let end_addr = Frame::containing_address(end);
+            for frame in Frame::range_inclusive(start_addr, end_addr) {
+                mapper.identity_map(frame, WRITABLE, allocator);
+            }
+        }
+
         /*
         // identity map ebda pointer
         let ebda_ptr = Frame::containing_address(0x40e);
@@ -384,6 +411,7 @@ pub struct RecursivePageTable {
     p4: Unique<Table<Level4>>,
 }
 
+/*
 /// In order to find the complete address we implement a way to go through four levels of
 /// page-tables in order to retrive four pices of the address.
 impl RecursivePageTable {
@@ -529,5 +557,5 @@ impl RecursivePageTable {
     }
 
 }
-
+*/
 // InactivePageTable owns a P4 table, just as the RecursivePageTable does, but is not used by the CPU

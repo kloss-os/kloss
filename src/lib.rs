@@ -44,12 +44,15 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     let rsdt = acpi::load_rsdt();
     let sdt_addr: Option<acpi::SDT_Addr>;
+    let sdt_loc: acpi::SDT_Loc;
 
     if let Some(ref rsdtr) = rsdt {
         unsafe { sdt_addr = Some(acpi::sdt_addr(rsdtr)); }
+        sdt_loc = acpi::sdt_loc(rsdtr);
     } else {
         println!("FAILED to load RSDT");
         sdt_addr = None;
+        sdt_loc = acpi::sdt_loc_dummy();
     }
 
 
@@ -157,7 +160,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     println!("3! = {}", fac(3));
 
     //memory::test_paging(&mut frame_allocator);
-    memory::remap_the_kernel(&mut frame_allocator, boot_info, sdt_addr);
+    memory::remap_the_kernel(&mut frame_allocator, boot_info, sdt_loc);
 
 
 
