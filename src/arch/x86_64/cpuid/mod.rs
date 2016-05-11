@@ -17,288 +17,288 @@ use self::features::{Features};
 // -- BASIC
 
 /// Maximum supported basic option and vendor ID string
-const BASIC_INFO      : u32 = 0x0000_0000;
+pub const BASIC_INFO      : u32 = 0x0000_0000;
 
 /// Processor type/family/model/stepping and feature flags
-const BASIC_FMS_FLAGS : u32 = 0x0000_0001;
+pub const BASIC_FMS_FLAGS : u32 = 0x0000_0001;
 
 /// Cache configuration descriptors (v1)
-const BASIC_CACHES_V1 : u32 = 0x0000_0002;
+pub const BASIC_CACHES_V1 : u32 = 0x0000_0002;
 
 /// Pricessor Serial Number
-const BASIC_PSN       : u32 = 0x0000_0003;
+pub const BASIC_PSN       : u32 = 0x0000_0003;
 
 /// Cache configuration descriptors (v2)
-const BASIC_CACHES_V2 : u32 = 0x0000_0004;
+pub const BASIC_CACHES_V2 : u32 = 0x0000_0004;
 
 /// Monitor information
-const BASIC_MON       : u32 = 0x0000_0005;
+pub const BASIC_MON       : u32 = 0x0000_0005;
 
 /// Power management information
-const BASIC_PWR_MGMT  : u32 = 0x0000_0006;
+pub const BASIC_PWR_MGMT  : u32 = 0x0000_0006;
 
 /// Feature flags
-const BASIC_FLAGS     : u32 = 0x0000_0007;
+pub const BASIC_FLAGS     : u32 = 0x0000_0007;
 
 /// Reserved instruction
-const BASIC_RES1      : u32 = 0x0000_0008; // Reserved
+pub const BASIC_RES1      : u32 = 0x0000_0008; // Reserved
 
 /// Direct Cache Access parameters
-const BASIC_DCA       : u32 = 0x0000_0009;
+pub const BASIC_DCA       : u32 = 0x0000_0009;
 
 /// Architectural Performance Monitor information
-const BASIC_PEMO      : u32 = 0x0000_000a;
+pub const BASIC_PEMO      : u32 = 0x0000_000a;
 
 /// Processor Topology information
-const BASIC_TOPOLOGY  : u32 = 0x0000_000b;
+pub const BASIC_TOPOLOGY  : u32 = 0x0000_000b;
 
 /// Reserved instruction
-const BASIC_RES2      : u32 = 0x0000_000c; // Reserved
+pub const BASIC_RES2      : u32 = 0x0000_000c; // Reserved
 
 /// Extended State enumeration features
-const BASIC_X_STATE   : u32 = 0x0000_000d;
+pub const BASIC_X_STATE   : u32 = 0x0000_000d;
 
 /// Reserved instruction
-const BASIC_RES3      : u32 = 0x0000_000e; // Reserved
+pub const BASIC_RES3      : u32 = 0x0000_000e; // Reserved
 
 /// Platform Quality of service Monitoring (PQM) enumeration
-const BASIC_PQM       : u32 = 0x0000_000f;
+pub const BASIC_PQM       : u32 = 0x0000_000f;
 
 /// Platform Quality of service Enforcement (PQE) enumeration
-const BASIC_PQE       : u32 = 0x0000_0010;
+pub const BASIC_PQE       : u32 = 0x0000_0010;
 
 /// Reserved instruction
-const BASIC_RES4      : u32 = 0x0000_0011; // Reserved
+pub const BASIC_RES4      : u32 = 0x0000_0011; // Reserved
 
 /// SGX resource enumeration
-const BASIC_SGX       : u32 = 0x0000_0012;
+pub const BASIC_SGX       : u32 = 0x0000_0012;
 
 /// Reserved instruction
-const BASIC_RES5      : u32 = 0x0000_0013; // Reserved
+pub const BASIC_RES5      : u32 = 0x0000_0013; // Reserved
 
 /// Processor Trace (PT) capability enumeration
-const BASIC_PT        : u32 = 0x0000_0014;
+pub const BASIC_PT        : u32 = 0x0000_0014;
 
 /// Processor frequency information 1/2
-const BASIC_FREQ1     : u32 = 0x0000_0015;
+pub const BASIC_FREQ1     : u32 = 0x0000_0015;
 
 /// Processor frequency information 2/2
-const BASIC_FREQ2     : u32 = 0x0000_0016;
+pub const BASIC_FREQ2     : u32 = 0x0000_0016;
 
 /// Processor vendor attribute information
-const BASIC_ATTR      : u32 = 0x0000_0017;
+pub const BASIC_ATTR      : u32 = 0x0000_0017;
 
 
 // -- XENON PHI
 // Only xenon phi processors
 
 /// Maximum supported option
-const XENON_PHI_MAX   : u32 = 0x2000_0000;
+pub const XENON_PHI_MAX   : u32 = 0x2000_0000;
 
 /// Xenon Phi Processor flag(s)
-const XENON_PHI_FLAGS : u32 = 0x2000_0001;
+pub const XENON_PHI_FLAGS : u32 = 0x2000_0001;
 
 /// Reserved instruction
-const XENON_PHI_RES1  : u32 = 0x2000_0002; // Reserved
+pub const XENON_PHI_RES1  : u32 = 0x2000_0002; // Reserved
 
 /// Reserved instruction
-const XENON_PHI_RES2  : u32 = 0x2000_0003; // Reserved
+pub const XENON_PHI_RES2  : u32 = 0x2000_0003; // Reserved
 
 /// Reserved instruction
-const XENON_PHI_RES3  : u32 = 0x2000_0004; // Reserved
+pub const XENON_PHI_RES3  : u32 = 0x2000_0004; // Reserved
 
 /// Reserved instruction
-const XENON_PHI_RES4  : u32 = 0x2000_0005; // Reserved
+pub const XENON_PHI_RES4  : u32 = 0x2000_0005; // Reserved
 
 /// Reserved instruction
-const XENON_PHI_RES5  : u32 = 0x2000_0006; // Reserved
+pub const XENON_PHI_RES5  : u32 = 0x2000_0006; // Reserved
 
 /// Reserved instruction
-const XENON_PHI_RES6  : u32 = 0x2000_0007; // Reserved
+pub const XENON_PHI_RES6  : u32 = 0x2000_0007; // Reserved
 
 
 // -- HYPERVISOR
 // Virtual machines/processors like VMWare, Virtualbox, etc.
 
 /// Vendor information
-const HYPERVISOR_VENDOR    : u32 = 0x4000_0000;
+pub const HYPERVISOR_VENDOR    : u32 = 0x4000_0000;
 
 /// Hypervisor interface
-const HYPERVISOR_INTERFACE : u32 = 0x4000_0001;
+pub const HYPERVISOR_INTERFACE : u32 = 0x4000_0001;
 
 /// Hypervisor version
-const HYPERVISOR_VERSION   : u32 = 0x4000_0002;
+pub const HYPERVISOR_VERSION   : u32 = 0x4000_0002;
 
 /// Hypervisor feature flags
-const HYPERVISOR_FEATURES  : u32 = 0x4000_0003;
+pub const HYPERVISOR_FEATURES  : u32 = 0x4000_0003;
 
 /// Hypervisor recommendations
-const HYPERVISOR_RECOMM    : u32 = 0x4000_0004;
+pub const HYPERVISOR_RECOMM    : u32 = 0x4000_0004;
 
 /// Hypervisor limit information
-const HYPERVISOR_LIMITS    : u32 = 0x4000_0005;
+pub const HYPERVISOR_LIMITS    : u32 = 0x4000_0005;
 
 /// Hypervisor hardware features detected and in use
-const HYPERVISOR_HARDWARE  : u32 = 0x4000_0006;
+pub const HYPERVISOR_HARDWARE  : u32 = 0x4000_0006;
 
 /// Reserved instruction
-const HYPERVISOR_RES1      : u32 = 0x4000_0007; // Reserved
+pub const HYPERVISOR_RES1      : u32 = 0x4000_0007; // Reserved
 
 
 // -- EXTENDED
 
 /// Maximum supported basic option and vendor ID
-const EXT_INFO                : u32 = 0x8000_0000;
+pub const EXT_INFO                : u32 = 0x8000_0000;
 
 /// Processor family/model/stepping and feature flags
-const EXT_FMS_FLAGS           : u32 = 0x8000_0001;
+pub const EXT_FMS_FLAGS           : u32 = 0x8000_0001;
 
 /// Processor name string (part 1/3)
-const EXT_PROCESSOR_NAME_STR1 : u32 = 0x8000_0002;
+pub const EXT_PROCESSOR_NAME_STR1 : u32 = 0x8000_0002;
 
 /// Processor name string (part 2/3)
-const EXT_PROCESSOR_NAME_STR2 : u32 = 0x8000_0003;
+pub const EXT_PROCESSOR_NAME_STR2 : u32 = 0x8000_0003;
 
 /// Processor name string (part 3/3)
-const EXT_PROCESSOR_NAME_STR3 : u32 = 0x8000_0004;
+pub const EXT_PROCESSOR_NAME_STR3 : u32 = 0x8000_0004;
 
 /// L1 Cache and L1 TLB configuration descriptors
-const EXT_L1CACHE_V1          : u32 = 0x8000_0005;
+pub const EXT_L1CACHE_V1          : u32 = 0x8000_0005;
 
 /// L2/L3 cache and L2 TLB configuration descriptors
-const EXT_L2L3_CACHE_V1       : u32 = 0x8000_0006;
+pub const EXT_L2L3_CACHE_V1       : u32 = 0x8000_0006;
 
 /// Processor capabilities
-const EXT_CAPABILITIES        : u32 = 0x8000_0007;
+pub const EXT_CAPABILITIES        : u32 = 0x8000_0007;
 
 /// Addewss size information and misc. information
-const EXT_ADDR_MISC           : u32 = 0x8000_0008;
+pub const EXT_ADDR_MISC           : u32 = 0x8000_0008;
 
 /// Reserved instruction
-const EXT_RES1                : u32 = 0x8000_0009;
+pub const EXT_RES1                : u32 = 0x8000_0009;
 
 /// Shared Virtual Memory information
-const EXT_SVM                 : u32 = 0x8000_000a;
+pub const EXT_SVM                 : u32 = 0x8000_000a;
 
 /// Reserved instruction
-const EXT_RES2                : u32 = 0x8000_000b;
+pub const EXT_RES2                : u32 = 0x8000_000b;
 
 /// Reserved instruction
-const EXT_RES3                : u32 = 0x8000_000c;
+pub const EXT_RES3                : u32 = 0x8000_000c;
 
 /// Reserved instruction
-const EXT_RES4                : u32 = 0x8000_000d;
+pub const EXT_RES4                : u32 = 0x8000_000d;
 
 /// Reserved instruction
-const EXT_RES5                : u32 = 0x8000_000e;
+pub const EXT_RES5                : u32 = 0x8000_000e;
 
 /// Reserved instruction
-const EXT_RES6                : u32 = 0x8000_000f;
+pub const EXT_RES6                : u32 = 0x8000_000f;
 
 /// Reserved instruction
-const EXT_RES7                : u32 = 0x8000_0010;
+pub const EXT_RES7                : u32 = 0x8000_0010;
 
 /// Reserved instruction
-const EXT_RES8                : u32 = 0x8000_0011;
+pub const EXT_RES8                : u32 = 0x8000_0011;
 
 /// Reserved instruction
-const EXT_RES9                : u32 = 0x8000_0012;
+pub const EXT_RES9                : u32 = 0x8000_0012;
 
 /// Reserved instruction
-const EXT_RES10               : u32 = 0x8000_0013;
+pub const EXT_RES10               : u32 = 0x8000_0013;
 
 /// Reserved instruction
-const EXT_RES11               : u32 = 0x8000_0014;
+pub const EXT_RES11               : u32 = 0x8000_0014;
 
 /// Reserved instruction
-const EXT_RES12               : u32 = 0x8000_0015;
+pub const EXT_RES12               : u32 = 0x8000_0015;
 
 /// Reserved instruction
-const EXT_RES13               : u32 = 0x8000_0016;
+pub const EXT_RES13               : u32 = 0x8000_0016;
 
 /// Reserved instruction
-const EXT_RES14               : u32 = 0x8000_0017;
+pub const EXT_RES14               : u32 = 0x8000_0017;
 
 /// Reserved instruction
-const EXT_RES15               : u32 = 0x8000_0018;
+pub const EXT_RES15               : u32 = 0x8000_0018;
 
 /// TLB Configuration descriptors
-const EXT_1G_TLB              : u32 = 0x8000_0019;
+pub const EXT_1G_TLB              : u32 = 0x8000_0019;
 
 /// Performance optimization identifiers
-const EXT_PERF_HINTS          : u32 = 0x8000_001a;
+pub const EXT_PERF_HINTS          : u32 = 0x8000_001a;
 
 /// Instruction Based Sampling (IBS) information
-const EXT_IBS                 : u32 = 0x8000_001b;
+pub const EXT_IBS                 : u32 = 0x8000_001b;
 
 /// Light Weight Profiling (LWP) information
-const EXT_LWP                 : u32 = 0x8000_001c;
+pub const EXT_LWP                 : u32 = 0x8000_001c;
 
 /// Cache configuration descriptors (v2)
-const EXT_CACHES_V2           : u32 = 0x8000_001d;
+pub const EXT_CACHES_V2           : u32 = 0x8000_001d;
 
 /// Topology information: APIC/unit/node information
-const EXT_TOPOLOGY            : u32 = 0x8000_001e;
+pub const EXT_TOPOLOGY            : u32 = 0x8000_001e;
 
 /// SME/SEV information
-const EXT_SME_SEV             : u32 = 0x8000_001f;
+pub const EXT_SME_SEV             : u32 = 0x8000_001f;
 
 
 // -- TRANSMETA
 // Only for Transmeta Processors
 
 /// Maximum supported transmeta option and vendor ID string
-const TRANSMETA_INFO        : u32 = 0x8086_0000;
+pub const TRANSMETA_INFO        : u32 = 0x8086_0000;
 
 /// Processor family/model/stepping and feature flags
-const TRANSMETA_FMS_FLAGS   : u32 = 0x8086_0001;
+pub const TRANSMETA_FMS_FLAGS   : u32 = 0x8086_0001;
 
 /// Hardware/Software revision
-const TRANSMETA_HW_SW_REV   : u32 = 0x8086_0002;
+pub const TRANSMETA_HW_SW_REV   : u32 = 0x8086_0002;
 
 /// Transmeta information string (part 1/4)
-const TRANSMETA_CMS_STRING1 : u32 = 0x8086_0003;
+pub const TRANSMETA_CMS_STRING1 : u32 = 0x8086_0003;
 
 /// Transmeta information string (part 2/4)
-const TRANSMETA_CMS_STRING2 : u32 = 0x8086_0004;
+pub const TRANSMETA_CMS_STRING2 : u32 = 0x8086_0004;
 
 /// Transmeta information string (part 3/4)
-const TRANSMETA_CMS_STRING3 : u32 = 0x8086_0005;
+pub const TRANSMETA_CMS_STRING3 : u32 = 0x8086_0005;
 
 /// Transmeta information string (part 4/4)
-const TRANSMETA_CMS_STRING4 : u32 = 0x8086_0006;
+pub const TRANSMETA_CMS_STRING4 : u32 = 0x8086_0006;
 
 /// Processor current core clock frequency (MHz), current core clock voltage (mV),
 /// current (LongRun) performance level [0-100%] and current gate delay (fs) 
-const TRANSMETA_MHZ_MV      : u32 = 0x8086_0007;
+pub const TRANSMETA_MHZ_MV      : u32 = 0x8086_0007;
 
 
 // -- CENTAUR
 // Only for Centaur Processors
 
 // Maximum supported option
-const CENTAUR_INFO      : u32 = 0xC000_0000;
+pub const CENTAUR_INFO      : u32 = 0xC000_0000;
 
 /// Processor information and flags
-const CENTAUR_FMS_FLAGS : u32 = 0xC000_0001;
+pub const CENTAUR_FMS_FLAGS : u32 = 0xC000_0001;
 
 /// Reserved instruction
-const CENTAUR_RES1      : u32 = 0xC000_0002;
+pub const CENTAUR_RES1      : u32 = 0xC000_0002;
 
 /// Reserved instruction
-const CENTAUR_RES2      : u32 = 0xC000_0003;
+pub const CENTAUR_RES2      : u32 = 0xC000_0003;
 
 /// Reserved instruction
-const CENTAUR_RES3      : u32 = 0xC000_0004;
+pub const CENTAUR_RES3      : u32 = 0xC000_0004;
 
 /// Reserved instruction
-const CENTAUR_RES4      : u32 = 0xC000_0005;
+pub const CENTAUR_RES4      : u32 = 0xC000_0005;
 
 /// Reserved instruction
-const CENTAUR_RES5      : u32 = 0xC000_0006;
+pub const CENTAUR_RES5      : u32 = 0xC000_0006;
 
 /// Reserved instruction
-const CENTAUR_RES6      : u32 = 0xC000_0007;
+pub const CENTAUR_RES6      : u32 = 0xC000_0007;
 
 
 // EOF CONSTANTS FOR USING CPUID 
@@ -422,12 +422,12 @@ impl CPUID {
             //
             // TODO: Verify 0x0 returned for non-existing
             //       option-levels.
-            let (base, _, _, _) = call_cpuid(BASIC_INFO);
-            let (xenon, _, _, _) = call_cpuid(XENON_PHI_MAX);
-            let (hyper, _, _, _) = call_cpuid(HYPERVISOR_VENDOR);
-            let (ext, _, _, _) = call_cpuid(EXT_INFO);
-            let (trans, _, _, _) = call_cpuid(TRANSMETA_INFO);
-            let (centaur, _, _, _) = call_cpuid(CENTAUR_INFO);
+            let (base, _, _, _) = call_cpuid(BASIC_INFO, 0);
+            let (xenon, _, _, _) = call_cpuid(XENON_PHI_MAX, 0);
+            let (hyper, _, _, _) = call_cpuid(HYPERVISOR_VENDOR, 0);
+            let (ext, _, _, _) = call_cpuid(EXT_INFO, 0);
+            let (trans, _, _, _) = call_cpuid(TRANSMETA_INFO, 0);
+            let (centaur, _, _, _) = call_cpuid(CENTAUR_INFO, 0);
 
             return CPUID {
                 basic_limit: base,
@@ -493,10 +493,7 @@ impl CPUID {
     /// Max supported basic option and vendor ID string
     pub fn basic_info(&self) -> (u32, [char;12]) {
         // Call CPUID
-        let resp;
-        unsafe {
-            resp = call_cpuid(BASIC_INFO);
-        }
+        let resp = self.raw(BASIC_INFO);
         
         // Extract info
         let (a,b,c,d) = resp;
@@ -606,19 +603,29 @@ impl CPUID {
     /// Call CPUID using supplied option, only
     /// if option does not exceed highest option
     /// available.
-    pub fn get(&self, option: u32, max_avail: u32) -> Option<(u32,u32,u32,u32)> {
+    fn get(&self, option: u32, max_avail: u32) -> Option<(u32,u32,u32,u32)> {
         if option <= max_avail {
-            unsafe {
-                Some(call_cpuid(option))
-            }
+            Some(self.raw(option))
         } else {
             None
         }
     }
+
+    /// Public raw call to CPUID
+    pub fn raw(&self, option: u32) -> (u32, u32, u32, u32) {
+        self.raw2(option, 0)
+    }
+
+    /// Public raw call to dual option CPUID
+    pub fn raw2(&self, option: u32, sub_option: u32) -> (u32, u32, u32, u32) {
+        unsafe {
+            call_cpuid(option, sub_option)
+        }        
+    }
 }
 
 /// Actual call to CPUID by way of assembly
-unsafe fn call_cpuid(option: u32) -> (u32, u32, u32, u32) {
+unsafe fn call_cpuid(option: u32, sub_option: u32) -> (u32, u32, u32, u32) {
     let eax: u32;
     let ebx: u32;
     let ecx: u32;
@@ -626,7 +633,7 @@ unsafe fn call_cpuid(option: u32) -> (u32, u32, u32, u32) {
     asm!(
         "cpuid"
             : "={eax}"(eax), "={ebx}"(ebx), "={ecx}"(ecx), "={edx}"(edx)
-            : "{eax}"(option)
+            : "{eax}"(option), "{ecx}"(sub_option)
             : "{eax}", "{ebx}","{ecx}","{edx}"
             : "intel"
     );
