@@ -224,9 +224,9 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
         mapper.identity_map(vga_buffer_frame, WRITABLE, allocator);
 
         // identity map the multiboot info structure
-        let multiboot_start = 
+        let multiboot_start =
             Frame::containing_address(boot_info.start_address());
-        let multiboot_end = 
+        let multiboot_end =
             Frame::containing_address(boot_info.end_address() - 1);
         for frame in Frame::range_inclusive(multiboot_start, multiboot_end) {
             mapper.identity_map(frame, PRESENT, allocator);
@@ -234,127 +234,20 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
 
 
 
-        /*
-        // identity map mbos
-        let mbos_start =
-            Frame::containing_address(0x000E0000);
-        let mbos_end =
-            Frame::containing_address(0x000FFFFF - 1);
-        for frame in Frame::range_inclusive(mbos_start, mbos_end) {
-            mapper.identity_map(frame, PRESENT, allocator);
-        }
-        */
 
-        /*
-        // identity map SDT addresses
-        if let Some(ref sdt_addr) = sdt {
-            println!("mapping {:x} to {:x}, {:x} to {:x}, {:x} and {:x} to {:x}",
-                     sdt_addr.rsdt_start, sdt_addr.rsdt_end,
-                     sdt_addr.madt_start, sdt_addr.madt_end,
-                     sdt_addr.lapic_ctrl,
-                     sdt_addr.ioapic_start, sdt_addr.ioapic_end);
-
-            let madt_start = Frame::containing_address(sdt_addr.madt_start);
-            let rsdt_end = Frame::containing_address(sdt_addr.rsdt_end - 1);
-            for frame in Frame::range_inclusive(madt_start, rsdt_end) {
-                mapper.identity_map(frame, PRESENT, allocator);
-            }
-
-            /*
-            let madt_start = Frame::containing_address(sdt_addr.madt_start);
-            let madt_end = Frame::containing_address(sdt_addr.madt_end - 1);
-            for frame in Frame::range_inclusive(madt_start, madt_end) {
-                mapper.identity_map(frame, PRESENT, allocator);
-            }
-
-            let rsdt_start = Frame::containing_address(sdt_addr.rsdt_start);
-            let rsdt_end = Frame::containing_address(sdt_addr.rsdt_end - 1);
-            for frame in Frame::range_inclusive(rsdt_start, rsdt_end) {
-                mapper.identity_map(frame, PRESENT, allocator);
-            }
-            */
-
-            let lapic_ctrl = Frame::containing_address(sdt_addr.lapic_ctrl);
-            mapper.identity_map(lapic_ctrl, WRITABLE, allocator);
-
-            let ioapic_start = Frame::containing_address(sdt_addr.ioapic_start);
-            let ioapic_end = Frame::containing_address(sdt_addr.ioapic_end);
-            for frame in Frame::range_inclusive(ioapic_start, ioapic_end) {
-                mapper.identity_map(frame, WRITABLE, allocator);
-            }
-        }
-        */
-
-        for (start, end) in sdt_loc.into_iter() {
+        for (start, end, next) in sdt_loc.into_iter() {
             let start_addr = Frame::containing_address(start);
             let end_addr = Frame::containing_address(end);
             for frame in Frame::range_inclusive(start_addr, end_addr) {
-                mapper.identity_map(frame, WRITABLE, allocator);
-            }
-        }
-
-        /*
-        // identity map ebda pointer
-        let ebda_ptr = Frame::containing_address(0x40e);
-        mapper.identity_map(ebda_ptr, PRESENT, allocator);
-
-
-
-        if let Some(rsdp) = rsdp::load_rsdp() {
-            println!("Loaded rsdp at {:x}", rsdp as *const _ as usize);
-
-            let rsdt_start = Frame::containing_address(rsdp.rsdt_addr as usize);
-            let rsdt_end = Frame::containing_address(rsdp.rsdt_addr as usize + 32);
-            for frame in Frame::range_inclusive(rsdt_start, rsdt_end) {
                 mapper.identity_map(frame, PRESENT, allocator);
             }
 
-            let rsdt_header = unsafe {&*(rsdp.rsdt_addr as *const acpi_header::ACPISDTHeader)};
+            let next_header_frame = Frame::containing_address(next);
+            mapper.identity_map(next_header_frame, PRESENT, allocator);
 
-            let rsdtd_start = Frame::containing_address(rsdp.rsdt_addr as usize + 36);
-            let rsdtd_end = Frame::containing_address(rsdp.rsdt_addr as usize
-                                                      + rsdt_header.length as usize);
-            for frame in Frame::range_inclusive(rsdtd_start, rsdtd_end) {
-                mapper.identity_map(frame, PRESENT, allocator);
-            }
+
         }
 
-
-
-        // identity map rsdt
-        if let Some(rsdt) = load_rsdt() {
-
-            if let Some(madt) = unsafe { load_madt(&rsdt) } {
-                let madt_start = Frame::containing_address(madt as *const _ as usize);
-                let madt_end = Frame::containing_address(madt as *const _ as usize + madt.header.length as usize - 1);
-                for frame in Frame::range_inclusive(madt_start, madt_end) {
-                    mapper.identity_map(frame, PRESENT, allocator);
-                }
-
-
-                if let Some(ioapic) = unsafe { load_ioapic_entry(&madt) } {
-                    println!("Loaded I/O APIC!");
-                    let ioapic_start = Frame::containing_address(ioapic as *const _ as usize - 1);
-                    let ioapic_end = Frame::containing_address(ioapic as *const _ as usize + 0x60 - 1);
-                    for frame in Frame::range_inclusive(ioapic_start, ioapic_end) {
-                        mapper.identity_map(frame, PRESENT, allocator);
-                    }
-
-                    // identity map IOAPIC address
-                    let ioapic_reg_start = Frame::containing_address(ioapic.address as usize);
-                    let ioapic_reg_end = Frame::containing_address(ioapic.address as usize + 0xFF);
-                    for frame in Frame::range_inclusive(ioapic_reg_start, ioapic_reg_end) {
-                        mapper.identity_map(frame, WRITABLE, allocator);
-                    }
-
-
-                } else {
-                    println!("Not loaded ioapic D:");
-                }
-            }
-
-        }
-        */
 
 
 
@@ -367,8 +260,8 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
     active_table.unmap(old_p4_page, allocator);
     println!("guard page at {:#x}", old_p4_page.start_address());
 }
-     
-    
+
+
 
 
 
