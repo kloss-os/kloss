@@ -120,9 +120,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         x86::irq::enable();
     }
 
-    println!("Ran {} recursive calls", call_recursively(10));
-    println!("3! = {}", fac(3));
-
     memory::test_paging(&mut frame_allocator);
 
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
@@ -134,24 +131,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
 
     loop{}
-}
-
-/// Stack stress test function: perform `n` (non-tail) recursive calls
-/// and return the number of calls made.
-fn call_recursively(n: u64) -> u64 {
-    match n {
-        0 => 0,
-        _ => 1 + call_recursively(n-1)
-    }
-}
-
-/// Stack stress test function: calculate the factorial of `n`.
-fn fac(n: u64) -> u64 {
-    match n {
-        0 => 1,
-        1 => 1,
-        _ => n * fac(n-1)
-    }
 }
 
 fn enable_nxe_bit() {
