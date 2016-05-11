@@ -43,13 +43,16 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
 
     let rsdt = acpi::load_rsdt();
-    let sdt_loc: acpi::SDT_Loc;
+    let mut sdt_loc = &mut acpi::sdt_loc_new();
 
     if let Some(ref rsdtr) = rsdt {
-        sdt_loc = acpi::sdt_loc(rsdtr);
+        sdt_loc.sdt_loc_load(rsdtr);
+        if let Some(madt) = unsafe {acpi::load_madt(rsdtr)} {
+            println!("loaded madt at {:x}", madt as *const _ as usize);
+        }
     } else {
         println!("FAILED to load RSDT");
-        sdt_loc = acpi::sdt_loc_dummy();
+        //sdt_loc = &mut acpi::sdt_loc_dummy();
     }
 
 
@@ -163,13 +166,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
-    
-    println!("It did not crash!");
+
 
     if let Some(ref rsdtr) = rsdt {
         acpi::get_rsdt(rsdtr);
     }
-    
+
+    println!("It did not crash!");
 
     loop{}
 }

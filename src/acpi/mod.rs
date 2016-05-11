@@ -120,12 +120,12 @@ pub struct SDT_Loc {
     rsdt_next: *const u32,
     rsdt_end: usize,
 
-    lapic_ctrl: usize,
-    ioapic_start:   usize,
-    ioapic_end: usize,
+    pub lapic_ctrl: usize,
+    pub ioapic_start:   usize,
+    pub ioapic_end: usize,
 }
 
-pub fn sdt_loc_dummy() -> SDT_Loc {
+pub fn sdt_loc_new() -> SDT_Loc {
     SDT_Loc {
         cur_start: 0,
         cur_end: 0,
@@ -137,15 +137,30 @@ pub fn sdt_loc_dummy() -> SDT_Loc {
     }
 }
 
-pub fn sdt_loc(rsdt: &'static RSDT) -> SDT_Loc {
-    SDT_Loc {
-        cur_start : rsdt as *const _ as usize,
-        cur_end : rsdt as *const _ as usize + rsdt.header.length as usize,
-        rsdt_next : &rsdt.first_ptr,
-        rsdt_end : rsdt as *const _ as usize + rsdt.header.length as usize,
-        lapic_ctrl: 0,
-        ioapic_start: 0,
-        ioapic_end: 0,
+
+impl SDT_Loc {
+    /*
+    pub fn sdt_loc_dummy(&mut self) {
+        SDT_Loc {
+            cur_start: 0,
+            cur_end: 0,
+            rsdt_next: 0 as *const u32,
+            rsdt_end: 0,
+            lapic_ctrl: 0,
+            ioapic_start: 0,
+            ioapic_end: 0,
+        }
+    }
+    */
+
+    pub fn sdt_loc_load(&mut self, rsdt: &'static RSDT) {
+        self.cur_start = rsdt as *const _ as usize;
+        self.cur_end = rsdt as *const _ as usize + rsdt.header.length as usize;
+        self.rsdt_next = &rsdt.first_ptr;
+        self.rsdt_end = rsdt as *const _ as usize + rsdt.header.length as usize;
+        self.lapic_ctrl= 0;
+        self.ioapic_start= 0;
+        self.ioapic_end= 0;
     }
 }
 
@@ -153,8 +168,9 @@ impl Iterator for SDT_Loc {
     type Item = (usize, usize, usize);
 
     fn next(&mut self) -> Option<(usize, usize, usize)> {
-        if self.cur_start != 0 {
-            let current = (self.cur_start, self.cur_end, unsafe { *self.rsdt_next as usize });
+        if self.cur_start != 0 && self.cur_end != 0 {
+            let current_next = unsafe { volatile_load(self.rsdt_next) as usize };
+            let current = (self.cur_start, self.cur_end, current_next);
 
             // Set next cur_start and cur_end
             if self.rsdt_next as *const _ as usize != 0
@@ -176,12 +192,6 @@ impl Iterator for SDT_Loc {
 
                 self.cur_start = next_header as *const _ as usize;
                 self.cur_end = self.cur_start + next_header.length as usize;
-            } else if self.lapic_ctrl != 0 {
-                self.cur_start = self.lapic_ctrl;
-                self.cur_end = self.lapic_ctrl;
-            } else if self.ioapic_start != 0 {
-                self.cur_start = self.ioapic_start;
-                self.cur_end = self.ioapic_end;
             } else {
                 self.cur_start = 0;
                 self.cur_end = 0;
@@ -199,6 +209,7 @@ impl Iterator for SDT_Loc {
             }
 
 
+            // Return span of current SDT
             Some(current)
         } else {
             None
@@ -237,6 +248,7 @@ pub fn load_rsdt() -> Option<&'static RSDT> {
 
 
 /// Finds a table of a certain type in an rsdt
+
 pub unsafe fn load_madt(rsdt: &'static RSDT) -> Option<&'static MADT> {
     // Make a raw pointer for the first SDT pointer
     let first: *const u32 = &rsdt.first_ptr;
@@ -333,6 +345,7 @@ pub unsafe fn print_madt(madt: &'static MADT) {
                     - (4 + 4); // Remove size of descriptors
 
 
+    /*
     // Iterate over bound
     let mut i = 0;
     while i < num_addr {
@@ -346,6 +359,7 @@ pub unsafe fn print_madt(madt: &'static MADT) {
 
         i += cur_head.record_length as u32;
     }
+    */
 }
 
 
@@ -464,10 +478,10 @@ pub fn get_rsdt(rsdt: &'static RSDT) {
 
     unsafe { mask_pic_irq(); }
     unsafe { remap_pic(); }
-    unsafe { set_ioapic(0xFEC00000); }
+    //unsafe { set_ioapic(0xFEC00000); }
 
     let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
-    //println!("IOAPIC contains 0x{:x}", read );
+    println!("IOAPIC contains 0x{:x}", read );
 
     if let Some(madt) = unsafe { load_madt(rsdt) } {
         println!("Loaded MADT");

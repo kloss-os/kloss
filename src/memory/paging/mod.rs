@@ -180,7 +180,7 @@ impl InactivePageTable {
     }
 }
 
-pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_loc: SDT_Loc)
+pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_loc: &mut SDT_Loc)
     where A: FrameAllocator{
     use core::ops::Range;
 
@@ -235,7 +235,8 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
 
 
 
-        for (start, end, next) in sdt_loc.into_iter() {
+        for (start, end, next) in &mut sdt_loc.into_iter() {
+            println!("Allocating addresses {:x} to {:x} and {:x}", start, end, next);
             let start_addr = Frame::containing_address(start);
             let end_addr = Frame::containing_address(end);
             for frame in Frame::range_inclusive(start_addr, end_addr) {
@@ -244,12 +245,26 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
                 }
             }
 
-            let next_header_frame = Frame::containing_address(next);
-            if mapper.is_unused(&next_header_frame, allocator) {
-                mapper.identity_map(next_header_frame, PRESENT, allocator);
+            if next != 0 {
+                let next_header_frame = Frame::containing_address(next);
+                if mapper.is_unused(&next_header_frame, allocator) {
+                    mapper.identity_map(next_header_frame, PRESENT, allocator);
+                }
             }
         }
 
+        let ioapic_start = Frame::containing_address(sdt_loc.ioapic_start);
+        let ioapic_end = Frame::containing_address(sdt_loc.ioapic_end);
+        for frame in Frame::range_inclusive(ioapic_start, ioapic_end) {
+            if mapper.is_unused(&frame, allocator) {
+                mapper.identity_map(frame, WRITABLE, allocator);
+            }
+        }
+
+        let lapic_addr = Frame::containing_address(sdt_loc.lapic_ctrl);
+        if mapper.is_unused(&lapic_addr, allocator) {
+            mapper.identity_map(lapic_addr, PRESENT, allocator);
+        }
 
 
 
