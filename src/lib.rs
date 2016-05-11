@@ -24,8 +24,8 @@ extern crate x86;
 #[doc(inline)]
 mod vga_buffer;
 mod memory;
+
 mod idt;
-mod arch;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -137,6 +137,9 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     }
 
+    println!("Ran {} recursive calls", call_recursively(10));
+    println!("3! = {}", fac(3));
+
     memory::test_paging(&mut frame_allocator);
     
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
@@ -145,59 +148,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     //frame_allocator.allocate_frame();
     
     println!("It did not crash!");
-
-
     
-    // TESTING CPUID MODULE
 
-    use arch::x86_64::cpuid;
-    let m_cpuid: cpuid::CPUID = cpuid::CPUID::new();
-    
-    // Basic info
-    let (max,vid) = m_cpuid.basic_info();
-    println!("\nCPUID BASE INFO:");
-    println!("  Max instruction: {}", max);
-    println!("  Vendor ID: {:?}", vid);
-    m_cpuid.print_limits();
-
-    // Flags
-    let m_features = m_cpuid.features();
-    println!("FEATURE TEST:");
-    println!("  SSE4.2:  {}",   m_features.sse4_2());
-    println!("  SSE4.1:  {}",   m_features.sse4_1());
-    println!("  SSE3:    {}",   m_features.sse3());
-    println!("  SSE2:    {}",   m_features.sse2());
-    println!("  SSE1:    {}",   m_features.sse());
-    println!("  mmx [c]: {}",   m_features.mmx());
-    println!("  fpu [c]: {}\n", m_features.fpu());
-    
-    // FMT
-    match m_cpuid.cpu_info() {
-        Some(fms) => {
-            let cpu_type;
-            match fms.cpu_type {
-                0 => cpu_type = "Primary",
-                1 => cpu_type = "Overdrive",
-                2 => cpu_type = "Secondary (for MP)",
-                _ => cpu_type = "Unknown"
-            };
-            
-            println!("CPUID FMT:");
-            println!("  stepping:  0x{:x}", fms.stepping);
-            println!("  type:      {}",     cpu_type);
-            println!("  model:     0x{:x}", fms.model);
-            println!("  family:    0x{:x}", fms.family);
-            println!("  brand:     0x{:x}", fms.brand);
-            println!("  cpu count: {}",     fms.cpu_cnt);
-            println!("  apic-id:   0x{:x}", fms.apic_id);
-            println!("  clflush:   0x{:x}", fms.clflush);
-        },
-        None => println!("FMT command not available.")
-
-    }
-
-    // EOF TEST CPUID
-    
     loop{}
 }
 // TODO: Skall dett vara kvar??
