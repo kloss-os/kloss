@@ -239,13 +239,15 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
             let start_addr = Frame::containing_address(start);
             let end_addr = Frame::containing_address(end);
             for frame in Frame::range_inclusive(start_addr, end_addr) {
-                mapper.identity_map(frame, PRESENT, allocator);
+                if mapper.is_unused(&frame, allocator) {
+                    mapper.identity_map(frame, PRESENT, allocator);
+                }
             }
 
             let next_header_frame = Frame::containing_address(next);
-            mapper.identity_map(next_header_frame, PRESENT, allocator);
-
-
+            if mapper.is_unused(&next_header_frame, allocator) {
+                mapper.identity_map(next_header_frame, PRESENT, allocator);
+            }
         }
 
 
