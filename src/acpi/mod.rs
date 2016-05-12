@@ -414,21 +414,15 @@ unsafe fn print_ioreg(ioapicaddr: *mut u32) {
     println!("IOAPIC ID: {:x}, VER: {:x}, ARB: {:x}",
              id, ver, arb);
 
+}
+
+
+unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
     let mut redtable: [u32; 64] = [0; 64];
     for i in 0x10..0x3F {
         redtable[i] = read_ioapic(ioapicaddr, i as u32);
     }
-
-    let mut i = 0;
-    while i < 64 {
-        println!("Red {}: {:x}_{:}, Red {}: {:x}_{:}",
-                 i, redtable[i], redtable[i+1],
-                 i+2, redtable[i+2], redtable[i+3]);
-        i += 4
-
-    }
 }
-
 
 
 
