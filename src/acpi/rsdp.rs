@@ -1,3 +1,10 @@
+//! #RSDP Module
+//! _Root System Descriptor Pointer_
+//!
+//! Lets you load and access metadata of the RSDP, which is required to load the RSDT.
+//!
+//! NOTE: Currently does _not_ access ACPIv2 and later, which is a hinder for bare-metal execution
+//! Totally fine in Qemu though
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 
 
@@ -80,7 +87,7 @@ pub fn find_ebda_start() -> usize {
 unsafe fn load_rsdp_addr(rsdp_addr: usize) -> Option<&'static RSDPdesc> {
     // THIS IS HOW YOU RECAST SH... stuff
     // Phil Opp's multiboot2 code uses similar syntax
-    if unsafe { verify_rsdp(rsdp_addr) } {
+    if verify_rsdp(rsdp_addr) {
         return Some(&*(rsdp_addr as *const RSDPdesc));
     } else {
         return None;

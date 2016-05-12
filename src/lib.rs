@@ -28,6 +28,7 @@ mod vga_buffer;
 mod memory;
 
 mod acpi;
+mod io;
 mod idt;
 
 /// This is the kernel main function! Control is passed after the ASM
@@ -42,17 +43,21 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     println!("Hello Rust!!!");
 
 
-    let rsdt = acpi::load_rsdt();
+    let rsdt = acpi::get_rsdt();
     let mut sdt_loc = &mut acpi::sdt_loc_new();
+    let ioapic: u32;
 
+    // This should be generalised for incompatible processors...?
     if let Some(ref rsdtr) = rsdt {
         sdt_loc.sdt_loc_load(rsdtr);
-        if let Some(madt) = unsafe {acpi::load_madt(rsdtr)} {
-            println!("loaded madt at {:x}", madt as *const _ as usize);
+        if let Some(ioapicaddr) = acpi::get_ioapic_addr(rsdtr) {
+            ioapic = ioapicaddr;
+        } else {
+            ioapic = 0x0;
         }
     } else {
         println!("FAILED to load RSDT");
-        //sdt_loc = &mut acpi::sdt_loc_dummy();
+        ioapic = 0x0;
     }
 
 
@@ -167,14 +172,9 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
 
-    unsafe { acpi::gen_ioredtable(0xFEC00000 as *mut u32); }
+    io::disable_pic();
+    unsafe { io::gen_ioredtable(ioapic as *mut u32); }
 
-    /*
-    if let Some(ref rsdtr) = rsdt {
-        acpi::get_rsdt(rsdtr);
-    }
-
-    */
     println!("It did not crash!");
 
     loop{}
