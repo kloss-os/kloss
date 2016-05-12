@@ -1,4 +1,11 @@
-// This is the main kernel file.
+//! Banjos is an experimental kernel for (reasonably) modern x86_64
+//! systems written in Rust. It was intended as an educational exercise,
+//! and strives to minimise complexity while maximising good programming
+//! practices, clarity, and use of high-level designs over raw
+//! performance.
+
+#![feature(concat_idents)]
+
 #![feature(lang_items)]
 #![no_std]
 
@@ -12,14 +19,11 @@ extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
 
-
-extern {
-    fn general_interrupt_handler();
-    fn general_exception_handler();
-}
-
 #[macro_use]
 extern crate bitflags;
+
+// Use the int! macro
+#[macro_use]
 extern crate x86;
 
 #[macro_use]
@@ -29,7 +33,9 @@ mod memory;
 
 mod acpi;
 mod io;
-mod idt;
+
+#[macro_use]
+mod irq;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
@@ -129,45 +135,21 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     println!("Setting up the IDT!");
     unsafe{
-        idt::idt_install();
-        let flags =   idt::FLAG_TYPE_TRAP_GATE
-                    | idt::FLAG_DPL_KERNEL_MODE
-                    | idt::FLAG_GATE_ENABLED;
-
-
-        // Install interrupt handlers for *everything*!
-        for ev in 0..33 {
-            idt::idt_set_gate(ev, general_exception_handler,
-                              idt::SELECT_TARGET_PRIV_1, flags);
-        }
-
-        for iv in 33..256 {
-            idt::idt_set_gate(iv, general_interrupt_handler,
-                              idt::SELECT_TARGET_PRIV_1, flags);
-        }
-
-        // Test out interrupts
-        // for iv in 0..256 {
-        //     println!("Sending interrupt #{}", iv);
-        //     asm!("int 42" ::::"intel");
-        // }
-        // asm!("int 42" ::::"intel");
-        // asm!("int 42" ::::"intel");
+        irq::install();
 
         asm!("int 42" ::::"intel");
+        asm!("int 128" ::::"intel");
+        asm!("int 255" ::::"intel");
 
         // Enable global interrupts!
-        asm!("sti" ::::"intel");
-
+        x86::irq::enable();
     }
 
-    println!("Ran {} recursive calls", call_recursively(10));
-    println!("3! = {}", fac(3));
+
 
     //memory::test_paging(&mut frame_allocator);
+
     memory::remap_the_kernel(&mut frame_allocator, boot_info, sdt_loc);
-
-
 
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
@@ -175,28 +157,21 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     io::disable_pic();
     unsafe { io::gen_ioredtable(ioapic as *mut u32); }
 
+
+    irq::set_handler(0x80, getkbd());
     println!("It did not crash!");
+
 
     loop{}
 }
-// TODO: Skall dett vara kvar??
-fn call_recursively(n: u64) -> u64 {
-    match n {
-        0 => 0,
-        _ => 1 + call_recursively(n-1)
-    }
+
+unsafe fn getkbd(arg: usize) {
+    println!("On the right track");
 }
-// TODO: Skall detta vara kvar 
-fn fac(n: u64) -> u64 {
-    match n {
-        0 => 1,
-        1 => 1,
-        _ => n * fac(n-1)
-    }
-}
+
 fn enable_nxe_bit() {
     use x86::msr::{IA32_EFER, rdmsr, wrmsr};
-    
+
     let nxe_bit = 1 << 11;
     unsafe {
         let efer = rdmsr(IA32_EFER);
@@ -228,13 +203,16 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-#[no_mangle]
-pub extern fn rust_interrupt_handler() {
+// These functions are called from the ASM interrupt wrappers, and they
+// need to be here, unfortunately.
 
-    println!("Handled interrupt!");
+#[no_mangle]
+pub extern fn rust_interrupt_handler(intnr: usize) {
+    irq::entry(intnr);
 }
 
 #[no_mangle]
 pub extern fn rust_exception_handler() {
     println!("Handled exception!");
+    irq::entry(0);
 }

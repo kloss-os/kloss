@@ -86,7 +86,7 @@ pub unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
     let read_kbd_lo = read_ioapic(ioapicaddr, KBD_IOWIN_LO) & IOWIN_RESERVED_LO;
 
     let (kbd_hi, kbd_lo) =
-        gen_irq(0, 0, 0, 0, 0, 0b000, 42);
+        gen_irq(0, 0, 0, 0, 0, 0b000, 0x80);
 
     write_ioapic(ioapicaddr, KBD_IOWIN_HI, kbd_hi | read_kbd_hi);
     write_ioapic(ioapicaddr, KBD_IOWIN_LO, kbd_lo | read_kbd_lo);
