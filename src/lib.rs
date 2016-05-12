@@ -154,20 +154,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
 
-    io::disable_pic();
-    unsafe { io::gen_ioredtable(ioapic as *mut u32); }
+    io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
 
-    irq::set_handler(0x80, getkbd());
     println!("It did not crash!");
-
-
     loop{}
 }
 
-unsafe fn getkbd(arg: usize) {
-    println!("On the right track");
-}
 
 fn enable_nxe_bit() {
     use x86::msr::{IA32_EFER, rdmsr, wrmsr};

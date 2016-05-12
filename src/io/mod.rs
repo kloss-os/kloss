@@ -6,6 +6,13 @@
 
 
 use core::intrinsics::{volatile_load, volatile_store};
+use irq;
+
+
+pub mod kbd;
+
+static mut LAPIC_BASE: usize = 0;
+
 
 // Masks for reserved bits
 const IOWIN_RESERVED_LO : u32 = 0b0101 << 24;
@@ -14,6 +21,27 @@ const IOWIN_RESERVED_HI : u32 = 0x00FF_FFFF;
 // Conventional registry offsets, write to IOREGSEL
 const KBD_IOWIN_LO : u32 = 0x12;
 const KBD_IOWIN_HI : u32 = 0x13;
+
+
+const LAPIC_EOI : u16 = 0x00B0;
+
+
+
+pub fn install_io(lapic_addr: usize, ioapic_addr: usize) {
+    // Set global variable
+    unsafe { LAPIC_BASE = lapic_addr; }
+
+    // Disable 8259PIC
+    disable_pic();
+    
+    // Generate redirection table for I/O
+    unsafe { gen_ioredtable(ioapic_addr as *mut u32); }
+
+
+    // Set handlers
+    let kbdh = kbd::getkbd;
+    irq::set_handler(0x80, kbdh);
+}
 
 
 
@@ -34,6 +62,7 @@ unsafe fn read_ioapic(ioapicaddr: *mut u32, reg: u32) -> u32 {
     volatile_store(ioapicaddr, reg & 0xFF);
     volatile_load( iowin )
 }
+
 
 /// Writes given data to the given address
 ///

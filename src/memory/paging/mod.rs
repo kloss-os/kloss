@@ -274,7 +274,7 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
 
         let lapic_addr = Frame::containing_address(sdt_loc.lapic_ctrl);
         if mapper.is_unused(&lapic_addr, allocator) {
-            mapper.identity_map(lapic_addr, PRESENT, allocator);
+            mapper.identity_map(lapic_addr, WRITABLE, allocator);
         }
 
 
