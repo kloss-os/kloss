@@ -24,7 +24,7 @@ extern crate x86;
 #[doc(inline)]
 mod vga_buffer;
 mod memory;
-
+mod arch;
 mod idt;
 
 /// This is the kernel main function! Control is passed after the ASM
