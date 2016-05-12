@@ -1,10 +1,6 @@
 /// Here we map a new InactivePageTable to Virtual Address
-///
-/// Known issues, Phill isn't concistent with use of function names.
-/// One instance of this is that he calls ActivePageTable for RecursivePageTable
-/// Right now I use Recursive, but might change to Active since it makes more sence
 /// This module is used since we can't, at this stage, zero the memory where addresses will be stored. So we temporarily map frames to some virtual address.
-/// 
+
 /// The already implemented memory::FrameAllocator is used to make the allocation hapen.
 
 use super::{Page, ActivePageTable, VirtualAddress};
@@ -48,7 +44,7 @@ impl TemporaryPage {
         -> &mut Table<Level1> {
         unsafe { &mut *(self.map(frame, active_table) as *mut Table<Level1>) }
     }
-    /// Unmaps the temporary page in th active table.
+    /// Unmaps the temporary page in the active table.
     pub fn unmap(&mut self, active_table: &mut ActivePageTable){
         active_table.unmap(self.page, &mut self.allocator)
     }
@@ -69,7 +65,7 @@ impl TinyAllocator {
         TinyAllocator(frames)
     }
 }
-
+/// A 'FrameAllocator' for TinyAllocator
 impl FrameAllocator for TinyAllocator {
     fn allocate_frame(&mut self) -> Option<Frame> {
         for frame_option in &mut self.0 {

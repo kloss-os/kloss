@@ -56,9 +56,11 @@ pub fn find_type(header: &'static ACPISDTHeader) -> Option<SDTtype> {
         [(b"RSDT", SDTtype::RSDT),
          (b"APIC", SDTtype::MADT)];
 
+    /*
     for i in header.signature.iter() {
         println!("SIG {}", *i as char);
     }
+    */
 
     for &(sig,sdtt) in sdt_sig.iter() {
         if sig.iter()

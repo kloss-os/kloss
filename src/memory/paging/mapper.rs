@@ -24,13 +24,16 @@ impl Mapper {
     pub fn p4_mut(&mut self) -> &mut Table<Level4> {
         unsafe { self.p4.get_mut() }
     }
-    
+    /// Translates a virtual to the corresponding physical address.
+    /// Returns 'None' if address is not mapped.
     pub fn translate(&self, virtual_address: VirtualAddress) -> Option<PhysicalAddress> {
         let offset = virtual_address % PAGE_SIZE;
         self.translate_page(Page::containing_address(virtual_address))
             .map(|frame| frame.number * PAGE_SIZE + offset)
     }
-    
+    /// Convertes the raw P4 pointer to a reference, and then Option::and_then 
+    /// goes through the four page levels. If any returns 'None' a check  is 
+    /// made if the page is a 'HUGE_PAGE'.
     pub fn translate_page(&self, page: Page) -> Option<Frame> {
         let p3 = self.p4().next_table(page.p4_index());
         
@@ -41,7 +44,8 @@ impl Mapper {
                 if let Some(start_frame) = p3_entry.pointed_frame() {
                     if p3_entry.flags().contains(HUGE_PAGE) {
                         // address must be 1GiB aligned
-                        assert!(start_frame.number % (ENTRY_COUNT * ENTRY_COUNT) == 0);
+                        assert!(start_frame.number % 
+                                (ENTRY_COUNT * ENTRY_COUNT) == 0);
                         return Some(Frame {
                             number: start_frame.number + page.p2_index() * ENTRY_COUNT +
                                 page.p1_index(),
@@ -55,7 +59,8 @@ impl Mapper {
                         if p2_entry.flags().contains(HUGE_PAGE) {
                             // address must be 2MiB aligned
                             assert!(start_frame.number % ENTRY_COUNT == 0);
-                            return Some(Frame { number: start_frame.number + page.p1_index() });
+                            return Some(Frame { 
+                                number: start_frame.number + page.p1_index() });
                         }
                     }
                 }
@@ -69,6 +74,9 @@ impl Mapper {
             .or_else(huge_page)
     }
 
+    /// Maps the page to the frame with the provided flags.
+    /// The 'PRESENT' flag is added by default. Needs a 
+    /// 'FrameAllocator' as it might need to create new page tables.
     pub fn map_to<A>(&mut self, page: Page, frame: Frame, flags: EntryFlags, allocator: &mut A)
         where A: FrameAllocator
     {
@@ -80,6 +88,8 @@ impl Mapper {
         p1[page.p1_index()].set(frame, flags | PRESENT);
     }
 
+    /// Maps the page to some free frame with the provided flags.
+    /// The free frame is allocated from the given 'FrameAllocator'
     pub fn map<A>(&mut self, page: Page, flags: EntryFlags, allocator: &mut A)
         where A: FrameAllocator
     {
@@ -87,6 +97,8 @@ impl Mapper {
         self.map_to(page, frame, flags, allocator)
     }
 
+    /// Identity map the given frame with the provided flags.
+    /// The free frame is allocated from the given 'FrameAllocator'
     pub fn identity_map<A>(&mut self, frame: Frame, flags: EntryFlags, allocator: &mut A)
         where A: FrameAllocator
     {
@@ -94,6 +106,8 @@ impl Mapper {
         self.map_to(page, frame, flags, allocator)
     }
 
+    /// Unmaps the given page and adds all freed frames to the given
+    /// 'FrameAllocator'
     pub fn unmap<A>(&mut self, page: Page, allocator: &mut A)
         where A: FrameAllocator
     {
@@ -109,8 +123,11 @@ impl Mapper {
         unsafe { ::x86::tlb::flush(page.start_address()) };
         // TODO free p(1,2,3) table if empty
         // allocator.deallocate_frame(frame);
+        // Phills egna, blir implementerat snart
     }
 
+    /// Checks whether a physical address has been allocated
+    /// Suuuper practical when identity mapping addresses that might fall into the same frame
     pub fn is_unused<A>(&mut self, frame: &Frame, allocator: &mut A)
         -> bool where A: FrameAllocator
     {

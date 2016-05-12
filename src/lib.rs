@@ -167,11 +167,14 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
 
+    unsafe { acpi::gen_ioredtable(0xFEC00000 as *mut u32); }
 
+    /*
     if let Some(ref rsdtr) = rsdt {
         acpi::get_rsdt(rsdtr);
     }
 
+    */
     println!("It did not crash!");
 
     loop{}

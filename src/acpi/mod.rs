@@ -7,6 +7,13 @@ pub mod acpi_header;
 pub mod rsdp;
 
 
+const IOWIN_RESERVED_HI : u32 = 0x00FF_FFFF;
+const IOWIN_RESERVED_LO : u32 = 0b0101 << 24;
+
+const KBD_IOWIN_HI : u32 = 0x13;
+const KBD_IOWIN_LO : u32 = 0x12;
+
+
 
 /// A struct designating the _Root System Description Table_ (RSDT).
 /// This contains pointers to all the other SDT's in the system.
@@ -345,21 +352,27 @@ pub unsafe fn print_madt(madt: &'static MADT) {
                     - (4 + 4); // Remove size of descriptors
 
 
-    /*
     // Iterate over bound
     let mut i = 0;
     while i < num_addr {
         let cur_addr = start.offset(i as isize);
         let cur_head = &*(cur_addr as *const IntCtrlHeader_entry);
 
+        if cur_head.entry_type == 0b00 {
+            let lapic = &*(cur_addr as *const LAPIC_entry);
+            println!("LAPIC PID: {:x}, ID {:x}, FLAGS {:x}",
+                     lapic.acpi_proc_id, lapic.apic_id, lapic.flags);
+        }
+
+        /*
         println!("Type: 0x{:x}, Len: 0x{:x} at address 0x{:x}",
                  cur_head.entry_type as u32,
                  cur_head.record_length as u32,
                  cur_addr as u32);
+         */
 
         i += cur_head.record_length as u32;
     }
-    */
 }
 
 
@@ -405,6 +418,14 @@ unsafe fn read_ioapic(ioapicaddr: *mut u32, reg: u32) -> u32 {
     volatile_load( iowin )
 }
 
+unsafe fn write_ioapic(ioapicaddr: *mut u32, reg: u32, data: u32) {
+    // Set IOWIN address
+    let iowin = (ioapicaddr as *const u32).offset(4) as *mut u32;
+
+    // Write the selected register to IOREGSEL
+    volatile_store(ioapicaddr, reg);
+    volatile_store(iowin, data);
+}
 
 unsafe fn print_ioreg(ioapicaddr: *mut u32) {
     let id  = read_ioapic(ioapicaddr, 0x00);
@@ -417,11 +438,46 @@ unsafe fn print_ioreg(ioapicaddr: *mut u32) {
 }
 
 
-unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
-    let mut redtable: [u32; 64] = [0; 64];
-    for i in 0x10..0x3F {
-        redtable[i] = read_ioapic(ioapicaddr, i as u32);
-    }
+pub unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
+    let read_kbd_hi = read_ioapic(ioapicaddr, KBD_IOWIN_HI) & IOWIN_RESERVED_HI;
+    let read_kbd_lo = read_ioapic(ioapicaddr, KBD_IOWIN_LO) & IOWIN_RESERVED_LO;
+
+    let (kbd_hi, kbd_lo) =
+        gen_irq(0, 0, 0, 0, 0, 0b000, 42);
+
+    write_ioapic(ioapicaddr, KBD_IOWIN_HI, kbd_hi | read_kbd_hi);
+    write_ioapic(ioapicaddr, KBD_IOWIN_LO, kbd_lo | read_kbd_lo);
+
+
+    let res_kbd_hi = read_ioapic(ioapicaddr, KBD_IOWIN_HI);
+    let res_kbd_lo = read_ioapic(ioapicaddr, KBD_IOWIN_LO);
+
+    println!("KBD INT HI: {:x}, KBD INT LO: {:x}",
+             res_kbd_hi, res_kbd_lo);
+}
+
+/// Generates two 32-bit registers to be written in a redirection table
+/// dest: _destination field_, specifies which LAPIC (by ID) interrupt is sent to
+/// dest_mod: _destination mode_, 1-bit, specifies whether (1) dest is a range, or (0) dest is
+/// a single address
+/// mask: _interrupt mask_, 1-bit, (1) disables the IRQ, but trouble might occur if an interrupt has
+/// already been accepted by the LAPIC
+/// trig: _trigger mode_, 1-bit, makes the signal (1) level sensitive or (0) edge sensitive
+/// pol: _interrupt pin polarity_, 1-bit, specifies whether (0) high active or (1) low active
+/// del_mod: _delivery mode_, is a _3-bit_ field specifying which specified LAPIC's to send
+/// interrupt to: e g `000` sends to all, while `001` sends to processor with lowest priority
+/// execution
+/// int_vec: _interrupt vector_, sets interrupt vector for this IRQ, range is 0x10-0xFE
+unsafe fn gen_irq(dest: u8, dest_mod: u8, mask: u8, trig: u8, pol: u8, del_mod: u8, int_vec: u8) -> (u32, u32) {
+    let hi: u32 = (dest as u32) << 24;
+    let lo: u32 =   (((mask as u32) & 0b1) << 16)
+                  | (((trig as u32) & 0b1) << 15)
+                  | (((pol as u32) & 0b1) << 13)
+                  | (((dest_mod as u32) & 0b1) << 11)
+                  | (((del_mod as u32) & 0b111) << 8)
+                  | int_vec as u32;
+
+    (hi, lo)
 }
 
 
@@ -463,6 +519,7 @@ unsafe fn mask_pic_irq() {
     }
 }
 
+
 unsafe fn remap_pic() {
     // https://en.wikibooks.org/wiki/X86_Assembly/Programmable_Interrupt_Controller#Remapping
 
@@ -495,11 +552,12 @@ pub fn get_rsdt(rsdt: &'static RSDT) {
 
     unsafe { mask_pic_irq(); }
     unsafe { remap_pic(); }
+    unsafe { gen_ioredtable(0xFEC00000 as *mut u32); }
     //unsafe { set_ioapic(0xFEC00000); }
 
-    let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
-    println!("IOAPIC contains 0x{:x}", read );
-    unsafe {print_ioreg(0xFEC00000 as *mut u32);}
+    //let read = unsafe { read_ioapic(0xFEC00000 as *mut u32, 0xF0) };
+    //println!("IOAPIC contains 0x{:x}", read );
+    //unsafe {print_ioreg(0xFEC00000 as *mut u32);}
 
     if let Some(madt) = unsafe { load_madt(rsdt) } {
         println!("Loaded MADT");
