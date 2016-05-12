@@ -31,6 +31,7 @@ mod memory;
 
 #[macro_use]
 mod irq;
+mod arch;
 
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
