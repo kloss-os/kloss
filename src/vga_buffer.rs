@@ -1,4 +1,4 @@
-/// This module is an interface to the IBM standard VGA Buffer.
+//! This module is an interface to the IBM standard VGA Buffer.
 
 use core::ptr::Unique;
 use core::fmt::Write;
