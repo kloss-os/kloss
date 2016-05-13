@@ -37,6 +37,9 @@ use self::asm_wrappers::*;
 
 mod dispatch;
 
+#[cfg(test)]
+mod tests;
+
 // Exception entry point re-export
 pub use self::dispatch::entry;
 
