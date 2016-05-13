@@ -38,6 +38,8 @@ mod io;
 mod irq;
 mod arch;
 
+mod msr;
+
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
