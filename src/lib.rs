@@ -7,10 +7,10 @@
 #![feature(concat_idents)]
 
 #![feature(lang_items)]
+#![feature(const_fn, unique)]
+#![feature(alloc, collections)]
 #![no_std]
 
-#![feature(const_fn)]
-#![feature(unique)]
 #![feature(asm)]
 
 #![feature(core_intrinsics)]
@@ -25,6 +25,13 @@ extern crate bitflags;
 // Use the int! macro
 #[macro_use]
 extern crate x86;
+
+//#[macro_use]
+//extern crate once;
+extern crate bump_allocator;
+extern crate alloc;
+//#[macro_use]
+//extern crate collections;
 
 #[macro_use]
 #[doc(inline)]

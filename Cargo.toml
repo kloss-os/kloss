@@ -37,3 +37,5 @@ git = "https://github.com/phil-opp/multiboot2-elf64"
 git = "https://github.com/phil-opp/bitflags.git"
 branch = "no_std"
 
+[dependencies.bump_allocator]
+path = "libs/bump_allocator"

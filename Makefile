@@ -138,3 +138,29 @@ libcore_install: libcore/lib.rs
 libcore/lib.rs: rustc-nightly-src.tar.gz libcore_nofp.patch
 	tar -xmf rustc-nightly-src.tar.gz rustc-nightly/src/libcore --transform 's~^rustc-nightly/src/~~'
 	patch -p0 < libcore_nofp.patch
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                                                     #
+#  Since we compile our own rust core library, we only get the        #
+#  core libraries we compile. Since we need the `alloc` library       #
+#  (amongst others), we need to compile these as well.                #
+#                                                                     #
+#  This is because when compiling to our custom target, the           #
+#  compiler does not look for libraries in the standard-target        #
+#  if not found, but looks only in our custom target.                 #
+#                                                                     #
+#  What is needed, tho, is to look through the source of the          #
+#  needed libraries and see wheter they utilize floating point        #
+#  or not -- as well as whether it is patched or not -- before        #
+#  adding them to the compile list.                                   #
+#                                                                     #
+#  The tar-command above extracts only `libcore` to the subfolder     #
+#  named `rustc-nightly/src/libcore` as it is its name and path       #
+#  within the tar-file. The `--transform 's~^rustc-nightly/src/~~'`   #
+#  option in the tar-command is applied post-extraction and           #
+#  simply moves the `libcore`-source folder to the current            #
+#  directory (`./libcore`). At least that is what I grasp it          #
+#  doing.                                                             #
+#                                                                     #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
