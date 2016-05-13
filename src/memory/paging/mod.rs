@@ -16,6 +16,11 @@ use core::ops::{Deref, DerefMut};
 use self::temporary_page::TemporaryPage;
 use multiboot2::BootInformation;
 
+//use acpi::rsdp;
+use acpi::*;
+use core::mem;
+use core::option;
+
 //use self::paging::PhysicalAddress;
 //use self::entry::HUGE_PAGE;
 
@@ -183,7 +188,7 @@ impl InactivePageTable {
     }
 }
 /// Remaps the kernel sections by creating a temporary page.
-pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
+pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_loc: &mut SDT_Loc)
     where A: FrameAllocator{
     use core::ops::Range;
     // Create a temporary page at some page number, in this case 0xcafebabe
@@ -196,11 +201,10 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
         let frame = allocator.allocate_frame().expect("no more frames");
         InactivePageTable::new(frame, &mut active_table, &mut temporary_page)
     };
-    
+
     active_table.with(&mut new_table, &mut temporary_page, |mapper| {
         let elf_sections_tag = boot_info.elf_sections_tag()
             .expect("Memory map tag required");
-        
         // Identity map the allocated kernel sections
         // Skip sections that are not loaded to memory. 
         // We require pages to be aligned, see src/arch/x86_64/linker.ld for implementations
@@ -209,15 +213,15 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
                 // section is not loaded to memory
                 continue;
             }
-            
+
             assert!(section.addr as usize % PAGE_SIZE == 0,
                     "sections need to be page aligned");
             println!("mapping section at addr: {:#x}, size: {:#x}",
                      section.addr,
                      section.size);
-            
+
             let flags = EntryFlags::from_elf_section_flags(section);
-            
+
             let start_frame = Frame::containing_address(section.start_address());
             let end_frame = Frame::containing_address(section.end_address() - 1);
             // 'range_inclusive' iterates over all frames on a section
@@ -225,19 +229,56 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
                 mapper.identity_map(frame, flags, allocator);
             }
         }
-        
+
         // identity map the VGA text buffer
         let vga_buffer_frame = Frame::containing_address(0xb8000);
         mapper.identity_map(vga_buffer_frame, WRITABLE, allocator);
-        
+
         // identity map the multiboot info structure
-        let multiboot_start = 
+        let multiboot_start =
             Frame::containing_address(boot_info.start_address());
-        let multiboot_end = 
+        let multiboot_end =
             Frame::containing_address(boot_info.end_address() - 1);
         for frame in Frame::range_inclusive(multiboot_start, multiboot_end) {
             mapper.identity_map(frame, PRESENT, allocator);
         }
+
+
+
+
+        for (start, end, next) in &mut sdt_loc.into_iter() {
+            println!("Allocating addresses {:x} to {:x} and {:x}", start, end, next);
+            let start_addr = Frame::containing_address(start);
+            let end_addr = Frame::containing_address(end);
+            for frame in Frame::range_inclusive(start_addr, end_addr) {
+                if mapper.is_unused(&frame, allocator) {
+                    mapper.identity_map(frame, PRESENT, allocator);
+                }
+            }
+
+            if next != 0 {
+                let next_header_frame = Frame::containing_address(next);
+                if mapper.is_unused(&next_header_frame, allocator) {
+                    mapper.identity_map(next_header_frame, PRESENT, allocator);
+                }
+            }
+        }
+
+        let ioapic_start = Frame::containing_address(sdt_loc.ioapic_start);
+        let ioapic_end = Frame::containing_address(sdt_loc.ioapic_end);
+        for frame in Frame::range_inclusive(ioapic_start, ioapic_end) {
+            if mapper.is_unused(&frame, allocator) {
+                mapper.identity_map(frame, WRITABLE, allocator);
+            }
+        }
+
+        let lapic_addr = Frame::containing_address(sdt_loc.lapic_ctrl);
+        if mapper.is_unused(&lapic_addr, allocator) {
+            mapper.identity_map(lapic_addr, WRITABLE, allocator);
+        }
+
+
+
     });
     // TODO: Delete when appropriate
     let old_table = active_table.switch(new_table);
@@ -248,8 +289,8 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
     active_table.unmap(old_p4_page, allocator);
     println!("guard page at {:#x}", old_p4_page.start_address());
 }
-     
-    
+
+
 
 
 

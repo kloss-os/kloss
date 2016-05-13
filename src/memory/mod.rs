@@ -29,10 +29,12 @@ impl Frame {
     fn start_address(&self) -> PhysicalAddress {
         self.number * PAGE_SIZE
     }
+
     /// Does what the trait 'Clone' does, but if implemented like this it remains private. If not prvate like this,  the frame allocator could free the same frame twice and so on.
     fn clone(&self) -> Frame {
         Frame { number: self.number }
     }
+
     // To map a section we need to iterate over all sections of the frame. 
     fn range_inclusive(start: Frame, end: Frame) -> FrameIter {
         FrameIter {

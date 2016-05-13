@@ -67,12 +67,13 @@ impl Mapper {
                 None
             })
         };
-        
+
         p3.and_then(|p3| p3.next_table(page.p3_index()))
             .and_then(|p2| p2.next_table(page.p2_index()))
             .and_then(|p1| p1[page.p1_index()].pointed_frame())
             .or_else(huge_page)
     }
+
     /// Maps the page to the frame with the provided flags.
     /// The 'PRESENT' flag is added by default. Needs a 
     /// 'FrameAllocator' as it might need to create new page tables.
@@ -82,10 +83,11 @@ impl Mapper {
         let mut p3 = self.p4_mut().next_table_create(page.p4_index(), allocator);
         let mut p2 = p3.next_table_create(page.p3_index(), allocator);
         let mut p1 = p2.next_table_create(page.p2_index(), allocator);
-        
+
         assert!(p1[page.p1_index()].is_unused());
         p1[page.p1_index()].set(frame, flags | PRESENT);
     }
+
     /// Maps the page to some free frame with the provided flags.
     /// The free frame is allocated from the given 'FrameAllocator'
     pub fn map<A>(&mut self, page: Page, flags: EntryFlags, allocator: &mut A)
@@ -94,6 +96,7 @@ impl Mapper {
         let frame = allocator.allocate_frame().expect("out of memory");
         self.map_to(page, frame, flags, allocator)
     }
+
     /// Identity map the given frame with the provided flags.
     /// The free frame is allocated from the given 'FrameAllocator'
     pub fn identity_map<A>(&mut self, frame: Frame, flags: EntryFlags, allocator: &mut A)
@@ -102,13 +105,14 @@ impl Mapper {
         let page = Page::containing_address(frame.start_address());
         self.map_to(page, frame, flags, allocator)
     }
+
     /// Unmaps the given page and adds all freed frames to the given
     /// 'FrameAllocator'
     pub fn unmap<A>(&mut self, page: Page, allocator: &mut A)
         where A: FrameAllocator
     {
         assert!(self.translate(page.start_address()).is_some());
-        
+
         let p1 = self.p4_mut()
             .next_table_mut(page.p4_index())
             .and_then(|p3| p3.next_table_mut(page.p3_index()))
@@ -120,5 +124,18 @@ impl Mapper {
         // TODO free p(1,2,3) table if empty
         // allocator.deallocate_frame(frame);
         // Phills egna, blir implementerat snart
+    }
+
+    /// Checks whether a physical address has been allocated
+    /// Suuuper practical when identity mapping addresses that might fall into the same frame
+    pub fn is_unused<A>(&mut self, frame: &Frame, allocator: &mut A)
+        -> bool where A: FrameAllocator
+    {
+        let page = Page::containing_address(frame.start_address());
+        let mut p3 = self.p4_mut().next_table_create(page.p4_index(), allocator);
+        let mut p2 = p3.next_table_create(page.p3_index(), allocator);
+        let mut p1 = p2.next_table_create(page.p2_index(), allocator);
+
+        p1[page.p1_index()].is_unused()
     }
 }

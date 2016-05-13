@@ -11,6 +11,7 @@ start:
         mov esp, stack_top
         mov edi, ebx            ; Move the multiboot pointer to edi
 
+
         ;; Now we have enough stack for a few calls.
         call check_multiboot
         call check_cpuid
@@ -19,6 +20,14 @@ start:
         call set_up_page_tables
         call enable_paging
         call set_up_SSE
+
+
+
+        ;; Disable PIC
+        mov al, 0xff
+        out 0xa1, al
+        out 0x21, al
+
 
         ;; load the 64-bit GDT
         lgdt [gdt64.pointer]
@@ -108,6 +117,17 @@ check_long_mode:
         jz .no_long_mode       ; If it's not set, there is no long mode
         ret
 .no_long_mode:
+        mov al, "2"
+        jmp error
+
+
+check_apic:
+        mov eax, 0x80000001
+        cpuid
+        test edx, 0x200
+        jz .no_apic
+        ret
+.no_apic:
         mov al, "2"
         jmp error
 

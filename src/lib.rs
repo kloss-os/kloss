@@ -13,6 +13,8 @@
 #![feature(unique)]
 #![feature(asm)]
 
+#![feature(core_intrinsics)]
+
 extern crate rlibc;
 extern crate spin;
 extern crate multiboot2;
@@ -29,6 +31,9 @@ extern crate x86;
 mod vga_buffer;
 mod memory;
 
+mod acpi;
+mod io;
+
 #[macro_use]
 mod irq;
 mod arch;
@@ -43,6 +48,26 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
+
+
+    let rsdt = acpi::get_rsdt();
+    let mut sdt_loc = &mut acpi::sdt_loc_new();
+    let ioapic: u32;
+
+    // This should be generalised for incompatible processors...?
+    if let Some(ref rsdtr) = rsdt {
+        sdt_loc.sdt_loc_load(rsdtr);
+        if let Some(ioapicaddr) = acpi::get_ioapic_addr(rsdtr) {
+            ioapic = ioapicaddr;
+        } else {
+            ioapic = 0x0;
+        }
+    } else {
+        println!("FAILED to load RSDT");
+        ioapic = 0x0;
+    }
+
+
 
     // Parse the boot info data from the Multiboot header
     let boot_info = unsafe{ multiboot2::load(multiboot_information_address) };
@@ -121,18 +146,22 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         x86::irq::enable();
     }
 
-    memory::test_paging(&mut frame_allocator);
 
-    memory::remap_the_kernel(&mut frame_allocator, boot_info);
+
+    //memory::test_paging(&mut frame_allocator);
+
+    memory::remap_the_kernel(&mut frame_allocator, boot_info, sdt_loc);
 
     // Denna skit är tveksam
     //frame_allocator.allocate_frame();
 
+    io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
+
+
     println!("It did not crash!");
-
-
     loop{}
 }
+
 
 fn enable_nxe_bit() {
     use x86::msr::{IA32_EFER, rdmsr, wrmsr};
