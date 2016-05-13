@@ -59,6 +59,17 @@ pub use self::dispatch::entry;
 ///
 /// # Examples
 ///
+/// Run the dummy function `krnl_dontpanic` via the high-level interrupt
+/// handling system whenever the interrupt number 42 is triggered:
+///
+/// ```
+/// fn unsafe krnl_dontpanic(vec: usize) {
+///     println!("Don't panic! I just caught interrupt no {}", vec);
+/// }
+/// //...
+/// //...
+/// set_handler(42, krnl_dontpanic);
+/// ```
 pub fn set_handler(vec: usize,
                    f: unsafe fn(usize)) -> () {
 
