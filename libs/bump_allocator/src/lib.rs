@@ -121,3 +121,8 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize,
     __rust_deallocate(ptr, size, align);
     new_ptr
 }
+
+#[no_mangle]
+pub extern fn _Unwind_Resume() {
+   // loop{}
+}

@@ -26,11 +26,11 @@ extern crate bitflags;
 #[macro_use]
 extern crate x86;
 
-//#[macro_use]
-//extern crate once;
+#[macro_use]
+extern crate once;
 extern crate bump_allocator;
 extern crate alloc;
-//#[macro_use]
+#[macro_use]
 extern crate collections;
 
 #[macro_use]
@@ -165,6 +165,14 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     //frame_allocator.allocate_frame();
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
+
+
+    // Test heap
+    use alloc::boxed::Box;
+    let heap_test = Box::new(42);
+
+    println!("It did not crash!");
+
 
 
     println!("It did not crash!");
