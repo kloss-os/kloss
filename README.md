@@ -25,6 +25,16 @@ På Ubuntu (LTS) motsvarar det följande: `sudo apt-get install quemu xorriso gr
 2. Installera en patchad version av rust: `make custom_target`.
 3. `make run` bygger en bootbar ISO med kärnan och kör den i QEMU
 
+### VIKTIGT!
+Om du redan har en installation av rust via  `multirust override nightly`
+kan du behöva installera om denna för att `make custom_target` skall fungera.
+Detta kan göras genom att ta bort den lokala `~/.multirust`-mappen och
+köra multirust override igen:
+
+```
+rm -rf ~/.multirust && multirust override nightly
+```
+
 ## Testa
 ![Pooh Assembly]
 (meta/images/pooh_assembly.png)
