@@ -25,7 +25,7 @@ extern crate x86;
 extern crate bump_allocator;
 extern crate alloc;
 //#[macro_use]
-//extern crate collections;
+extern crate collections;
 
 #[macro_use]
 #[doc(inline)]

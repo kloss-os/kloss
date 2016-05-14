@@ -15,6 +15,10 @@ assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 
 rust_os := target/$(target)/debug/libbanjos.a
 
+# CUSTOM TARGET
+# important to order dependencies first to last. Eg.
+# core first as alloc needs core, etc.
+rustlibs := core alloc rustc_unicode collections
 
 ###################################################################
 # OS Detection in Makefile, taken from stackoverflow:
@@ -64,7 +68,7 @@ TEXT_BOLD    := $$(tput bold)
 TEXT_RESET   := $$(tput sgr0)
 
 
-.PHONY: all clean run iso test debug gdb
+.PHONY: all clean run iso test debug gdb custom_target
 
 all: $(kernel)
 
@@ -122,22 +126,31 @@ dev_doc:
 	cargo rustdoc -- --no-defaults --passes strip-hidden --passes collapse-docs --passes unindent-comments --passes strip-priv-imports
 
 
-# Build and install a patched libcore:
+# Build and install a patched custom target:
+custom_target: $(patsubst %,lib%_install,$(rustlibs))
+	rm -r $(patsubst %_install,./%,$^)
 
+# Fetch latest nightly 
 rustc-nightly-src.tar.gz:
 	curl https://static.rust-lang.org/dist/rustc-nightly-src.tar.gz -o rustc-nightly-src.tar.gz
 
-libcore_install: libcore/lib.rs
+# Compile- and install to target folder
+lib%_install: lib%/lib.rs
 	mkdir -p build
 	mkdir -p ~/.multirust/toolchains/nightly/lib/rustlib/$(target)/lib/
 	rustc --target $(target) -Z no-landing-pads \
 	    --cfg disable_float \
 	    --out-dir ~/.multirust/toolchains/nightly/lib/rustlib/$(target)/lib \
-	    libcore/lib.rs
+	    $^
 
+# Custom for libcore as to patch it
 libcore/lib.rs: rustc-nightly-src.tar.gz libcore_nofp.patch
 	tar -xmf rustc-nightly-src.tar.gz rustc-nightly/src/libcore --transform 's~^rustc-nightly/src/~~'
 	patch -p0 < libcore_nofp.patch
+
+# All other rust libraries
+lib%/lib.rs: rustc-nightly-src.tar.gz libcore_nofp.patch
+	tar -xmf rustc-nightly-src.tar.gz rustc-nightly/src/$(patsubst %/lib.rs,%,$@) --transform 's~^rustc-nightly/src/~~'
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
