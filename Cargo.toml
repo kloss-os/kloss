@@ -40,5 +40,5 @@ branch = "no_std"
 [dependencies.once]
 git = "https://github.com/phil-opp/rust-once.git"
 
-[dependencies.bump_allocator]
-path = "libs/bump_allocator"
+[dependencies.hole_list_allocator]
+path = "libs/hole_list_allocator"

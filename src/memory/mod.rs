@@ -67,7 +67,7 @@ pub fn init(boot_info: &BootInformation, sdt_loc: &mut SDT_Loc) {
     // ===============================================================
 
     use self::paging::Page;
-    use bump_allocator::{HEAP_START, HEAP_SIZE};
+    use hole_list_allocator::{HEAP_START, HEAP_SIZE};
     
     // Get start- and end page of heap
     let heap_start_page = Page::containing_address(HEAP_START);
