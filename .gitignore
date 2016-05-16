@@ -6,6 +6,8 @@
 /meta/**/*.fls
 /meta/**/*.bbl
 /meta/**/*.blg
+/meta/**/*.lof
+/meta/**/*.toc
 
 /build/*
 /Cargo.lock
