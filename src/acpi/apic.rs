@@ -7,7 +7,11 @@
 
 
 use core::mem;
+use core::intrinsics::{volatile_store};
 use acpi::sdt;
+
+const APIC_SPURIOUS      : u32 = 0x0F0;
+const APIC_SW_ENABLE     : u32 = 0x100;
 
 /// Universal header for interrupt controller description
 #[repr(C, packed)]
@@ -147,4 +151,16 @@ pub unsafe fn load_iosapic_entry(madt: &'static sdt::MADT) -> Option<&'static IO
     }
 
     return None;
+}
+
+/// Redirect spurious interrupts in the APIC to a desired interrupt
+/// vector.
+pub unsafe fn redirect_spurious(apic_addr: usize, target_irq: u32) {
+    // Inspired by http://wiki.osdev.org/APIC_timer
+
+    let target_value = (target_irq + APIC_SW_ENABLE) as u32;
+    let apic_spurious_address = (apic_addr as u32 + APIC_SPURIOUS) as *mut u32;
+
+    volatile_store(apic_spurious_address,
+                   target_value);
 }

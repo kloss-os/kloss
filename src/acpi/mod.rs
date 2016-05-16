@@ -14,9 +14,7 @@ use core::mem;
 
 mod sdt;
 mod rsdp;
-mod apic;
-
-
+pub mod apic;
 
 /// Struct that contains addresses given by SDT, these can be memory mapped using an iterator
 pub struct SDT_Loc {

@@ -95,6 +95,16 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     unsafe{
         // Install IRQ
         irq::install();
+
+        // Redirect spurious interrupts
+        acpi::apic::redirect_spurious(sdt_loc.lapic_ctrl, 255);
+
+        // Register the null interrupt handler for the spurious
+        // interrupt vector.
+        irq::idt::set_gate(255, irq::isr_null,
+                           irq::idt::SELECT_TARGET_PRIV_1,
+                           irq::DEFAULT_FLAGS);
+
         // Enable global interrupts!
         x86::irq::enable();
     }
