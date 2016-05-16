@@ -6,7 +6,7 @@ pub type Content = u8;
 
 /// BUFFER_SIZE is set to a low number
 const BUFFER_SIZE: usize = 5;
-
+/// START_POINTER is kind of a test thing since usize would not work as intended
 const START_POINT: usize = 0;
 
 /// A circular buffer with fixed size [5]
@@ -42,7 +42,7 @@ impl Buffer{
         self.rp == self.wp
     }
 
-    // Steps writer one step forward, circle aspect included 
+    // Steps writer one step forward, circle aspect included
     pub fn step_wp(&mut self){
         if self.wp == BUFFER_SIZE && self.rp != START_POINT{
             self.wp = 0; 
