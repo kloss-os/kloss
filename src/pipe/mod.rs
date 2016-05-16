@@ -7,6 +7,8 @@ pub type Content = u8;
 /// BUFFER_SIZE is set to a low number
 const BUFFER_SIZE: usize = 5;
 
+const START_POINT: usize = 0;
+
 /// A circular buffer with fixed size [5]
 /// Contains:
 /// - Read pointer (rp), the current location of the reader
@@ -40,10 +42,28 @@ impl Buffer{
         self.rp == self.wp
     }
 
+    // Steps writer one step forward, circle aspect included 
+    pub fn step_wp(&mut self){
+        if self.wp == BUFFER_SIZE && self.rp != START_POINT{
+            self.wp = 0; 
+        } else {
+            self.wp += 1; 
+        }
+    }
+
+    // Steps reader one step forward, circle aspect included 
+    pub fn step_rp(&mut self){
+        if self.rp == BUFFER_SIZE && self.wp != START_POINT{
+            self.rp = 0; 
+        } else {
+            self.rp += 1; 
+        }
+    }
+
     // Write Content to current +1 writerpointer address. Check if full. 
     pub fn write(&mut self, insert: Content){
         assert!(!self.is_full(), "Buffer is full!");
-        self.wp = (self.wp +1);
+        self.step_wp();
         self.buf[self.wp] = insert;
 
     }
@@ -51,7 +71,8 @@ impl Buffer{
     // Read Content from current +1 reader pointer,
     pub fn read(&mut self) -> Content {
         assert!(!self.is_empty(), "Reading empty space!");
-        self.rp = (self.rp +1);
+        self.step_rp();
+        //self.rp = self.rp +1;
         self.buf[self.rp]
     }
 }
