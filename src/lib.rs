@@ -7,10 +7,10 @@
 #![feature(concat_idents)]
 
 #![feature(lang_items)]
+#![feature(const_fn, unique)]
+#![feature(alloc, collections)]
 #![no_std]
 
-#![feature(const_fn)]
-#![feature(unique)]
 #![feature(asm)]
 
 #![feature(core_intrinsics)]
@@ -25,6 +25,14 @@ extern crate bitflags;
 // Use the int! macro
 #[macro_use]
 extern crate x86;
+
+#[macro_use]
+extern crate once;
+//extern crate bump_allocator;
+extern crate hole_list_allocator;
+extern crate alloc;
+#[macro_use]
+extern crate collections;
 
 #[macro_use]
 #[doc(inline)]
@@ -51,7 +59,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     vga_buffer::clear_screen();
     println!("Hello Rust!!!");
 
-
     let rsdt = acpi::get_rsdt();
     let mut sdt_loc = &mut acpi::sdt_loc_new();
     let ioapic: u32;
@@ -69,98 +76,52 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         ioapic = 0x0;
     }
 
-
-
     // Parse the boot info data from the Multiboot header
-    let boot_info = unsafe{ multiboot2::load(multiboot_information_address) };
-    let memory_map_tag = boot_info.memory_map_tag()
-        .expect("Memory map tag required");
-
-    // Dump memory areas to screen.
-    println!("Memory areas:");
-    for area in memory_map_tag.memory_areas() {
-        println!("    start: 0x{:x}, length 0x{:x}",
-                area.base_addr,
-                area.length);
-    }
-
-    // Load the elf-sections tags from the (now parsed) Multiboot header
-    let elf_sections_tag = boot_info.elf_sections_tag()
-        .expect("Elf-sections tag required");
-
-    // ...and print them to screen.
-    println!("Kernel sections:");
-    for section in elf_sections_tag.sections() {
-        println!("    addr: 0x{:x}, size 0x{:x}, flags: 0x:{:x}",
-                 section.addr, section.size, section.flags);
-    }
-
-    // Calculate the start and end addresses of the actual kernel data in RAM.
-    // This will be useful for kernel relocation (and memory allocation).
-    // Note how we are using map() and anonymous functions _in kernel space_.
-    let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
-        .min().unwrap();
-    let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
-        .max().unwrap();
-
-    let multiboot_start = multiboot_information_address;
-    let multiboot_end = multiboot_start + (boot_info.total_size as usize);
-
-    println!("Kernel start: 0x{:x}, kernel end: 0x{:x}",
-             kernel_start, kernel_end);
-
-    println!("Multiboot start: 0x{:x}, multiboot end: 0x{:x}",
-             multiboot_start, multiboot_end);
-
-    // Set up a frame allocator.
-    let mut frame_allocator = memory::AreaFrameAllocator::new(
-        kernel_start as usize,
-        kernel_end as usize,
-        multiboot_start,
-        multiboot_end,
-        memory_map_tag.memory_areas());
+    let boot_info = unsafe{
+        multiboot2::load(multiboot_information_address)
+    };
 
     enable_nxe_bit();
     enable_write_protect_bit();
 
-    /*
-    memory::test_paging(&mut frame_allocator);
-
-    // Try allocating _all available frames_.
-    for i in 0.. {
-        use memory::FrameAllocator;
-        if let None = frame_allocator.allocate_frame() {
-            println!("Allocated {} frames", i);
-            break;
-        }
-    }
-    */
+    // Initialize memory mapping and paging, as well as
+    // kernel-remap and all other memory-related set-up
+    memory::init(boot_info, sdt_loc);
 
     println!("Setting up the IDT!");
     unsafe{
+        // Install IRQ
         irq::install();
-
-        asm!("int 42" ::::"intel");
-        asm!("int 128" ::::"intel");
-        asm!("int 255" ::::"intel");
-
         // Enable global interrupts!
         x86::irq::enable();
     }
 
-
-
-    //memory::test_paging(&mut frame_allocator);
-
-    memory::remap_the_kernel(&mut frame_allocator, boot_info, sdt_loc);
-
-    // Denna skit är tveksam
-    //frame_allocator.allocate_frame();
-
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
+    // ======================================================
+    // Test heap
+    // ======================================================
 
+    use alloc::boxed::Box;
+    use collections::String;
+    let heap_test = Box::new(42);
+
+    let v = vec![1,2,3,4,5];
+    for i in &v {
+        print!("{}", i);
+    }
+
+    let hello = String::from("Hello from heap!");
+    println!("{}",hello);
+
+    // ======================================================
+    // EOF Test heap
+    // ======================================================
+
+    // Final print before infloop
     println!("It did not crash!");
+
+    // Loop to infinity and beyond!
     loop{}
 }
 

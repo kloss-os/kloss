@@ -19,10 +19,21 @@ Du behöver:
 
 På Ubuntu (LTS) motsvarar det följande: `sudo apt-get install quemu xorriso grub-mkrescue nasm`.
 
-Gör så här:
+**Gör så här:**
+
 1. Installera senaste nightlyn av Rust m.h.a. multirust: `multirust override nightly`.
-2. Installera en patchad version av libcore: `make libcore_install`.
+2. Installera en patchad version av rust: `make custom_target`.
 3. `make run` bygger en bootbar ISO med kärnan och kör den i QEMU
+
+### VIKTIGT!
+Om du redan har en installation av rust via  `multirust override nightly`
+kan du behöva installera om denna för att `make custom_target` skall fungera.
+Detta kan göras genom att ta bort den lokala `~/.multirust`-mappen och
+köra multirust override igen:
+
+```
+rm -rf ~/.multirust && multirust override nightly
+```
 
 ## Testa
 ![Pooh Assembly]
