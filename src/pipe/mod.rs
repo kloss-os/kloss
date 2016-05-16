@@ -2,7 +2,7 @@
 /// Idéa is to create a circular fifo buffer with a reader and a writer.
 /// Buffer will be created by FrameAllocator, this will make the buffer 
 /// 4096 bytes big.
-/// Eventuall additions:
+/// Future additions:
 /// - Writers and readers can create new buffers.  Eg. different processes
 ///   could write to their own buffers/pipes.
 
