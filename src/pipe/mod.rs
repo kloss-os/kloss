@@ -6,15 +6,6 @@
 /// - Writers and readers can create new buffers.  Eg. different processes
 ///   could write to their own buffers/pipes.
 
-/*
-use memory::FrameAllocator; //Is used to create a frame for the buffer
-
-/// Pointer to Writers location on memory
-pub type WriterLocation = usize;
-/// Pointer to Readers location on memory
-pub type ReaderLoacation = usize;
-*/
-
 /// Pointer to Buffer location on memory
 pub type BufferLocation = usize;
 /// Content in buffer
@@ -22,17 +13,13 @@ pub type Content = u8;
 
 /// A circular buffer with fixed size
 /// Contains:
-/// - Writer that can wrte to it,
-/// - Reader that can read from it
-/// - Boolean that tells if buffer is full or not, overflow check
-/// (- Read pointer (rdptr), the current location of the reader)
-/// (- Write pointer (wrptr), the current location of the writer)
+/// - Read pointer (rdptr), the current location of the reader
+/// - Write pointer (wrptr), the current location of the writer
 pub struct Buffer {
     // writer: Writer, // Traits?
     // reader: Reader, // Traits?
     rdptr: u64, // Maybe, or reader know this.
     wrptr: u64, // Maybe, or writer knows this. 
-    //frame: Frame, // Unclear what to use at the moment
 }
 
 /// Implementation of buffer
@@ -65,6 +52,8 @@ impl Buffer{
     }
 }
 
+
+/*
 /// A writer that takes an input ASCII (to start with) and writes it to the buffe
 impl Writer{
     // Function enabeling writing to a specific buffer
@@ -76,3 +65,4 @@ impl Reader{
     // Function for reading from buffer
     pub fn read(Buffer: BufferLocation) -> Content
 }
+*/
