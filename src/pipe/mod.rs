@@ -1,32 +1,33 @@
-/// Basic pipe functionality
-/// Idéa is to create a circular fifo buffer with a reader and a writer.
-/// Buffer will be created by FrameAllocator, this will make the buffer 
-/// 4096 bytes big.
-/// Future additions:
-/// - Writers and readers can create new buffers.  Eg. different processes
-///   could write to their own buffers/pipes.
+/// Box implemenatations an memory stuffs
+use core::mem;
 
-/// Pointer to Buffer location on memory
-pub type BufferLocation = usize;
 /// Content in buffer
 pub type Content = u8;
+
+
+const BUFFER_SIZE = 5;
 
 /// A circular buffer with fixed size
 /// Contains:
 /// - Read pointer (rdptr), the current location of the reader
 /// - Write pointer (wrptr), the current location of the writer
 pub struct Buffer {
-    // writer: Writer, // Traits?
-    // reader: Reader, // Traits?
-    rdptr: u64, // Maybe, or reader know this.
-    wrptr: u64, // Maybe, or writer knows this. 
+    wrptr: u8,
+    rdptr: u8,
+    buffer: [u8; BUFFER_SIZE],
 }
 
+pub fn box_buffer
 /// Implementation of buffer
 impl Buffer{
     // Constructor
-    pub fn new(BufferLocation: BufferLocation, rdptr: u64 = 0, wrptr: u64 = 0) 
-               -> Buffer
+    pub fn new()-> Box<Buffer> {
+        Box::new(Buffer{
+            wrptr: 0,
+            rdptr: 0,
+            buffer: [0; BUFFER_SIZE]
+        })
+    }
     
     // Check if writer +1 is equal to reader, returns boolean  
     pub fn is_full(&self) -> Bool{
@@ -42,27 +43,14 @@ impl Buffer{
     // Write Content to current +1 writerpointer address. Check if full. 
     pub fn write(&self, insert: Content){
         assert!(self.is_full(), "Buffer is full!");
-        // TODO: Add one to pointer and write to that space  
+        self.buffer[wrptr + 1] = Content;
+        self.wrptr = (wrptr + 1);
     }
     
     // Read Content from current +1 reader pointer,
     pub fn read(&self) -> Content {
-        assert!(self.is_empty(), "Reading empty space!")
-        // TODO: Add one to pointer and read it
+        assert!(self.is_empty(), "Reading empty space!");
+        self.rdptr = (rdptr +1);
+        self.buffer[rdptr];
     }
 }
-
-
-/*
-/// A writer that takes an input ASCII (to start with) and writes it to the buffe
-impl Writer{
-    // Function enabeling writing to a specific buffer
-    pub fn write(Buffer: BufferLocation, insert: Content)
-}
-
-/// A reader that extraxts a buffer value
-impl Reader{
-    // Function for reading from buffer
-    pub fn read(Buffer: BufferLocation) -> Content
-}
-*/
