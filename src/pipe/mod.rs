@@ -76,3 +76,9 @@ impl Buffer{
         self.buf[self.rp]
     }
 }
+
+#[test]
+fn buffer_add(){
+    assert!(false);
+}
+
