@@ -115,9 +115,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     //println!("{}",hello);
     
     use pipe::Buffer;
+        
     let mut buffer = Buffer::new();
     buffer.write(42);
     println!("{}", buffer.read());
+
+    
+
 
     // ======================================================
     // EOF Test heap
