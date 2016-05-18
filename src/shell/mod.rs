@@ -57,7 +57,6 @@ pub fn main(input: &mut Buffer) {
             line.push(c as char);
         }
         let ref mut split_line = line.split_whitespace();
-        println!("{}", line);
 
         unsafe {
             match lang {
@@ -97,15 +96,18 @@ fn parse_line_sv(rd_line: &mut SplitWhitespace) {
             Some(thing) => println!("{}", thing),
             _ => println!("Inget argument givet"),
         },
+
         Some("kulor") => match rd_line.next() {
             Some(thing) =>
                 println!("kulor till {}", thing),
             _ =>
                 println!("kulor till dig!"),
         },
+
         Some("utse-uttrycksmedel") => if let Some(new_lang) = rd_line.next() {
             set_lang(new_lang);
         },
+
         None => {},
         _ => println!("Tolkning av kommandot misslyckades."),
     }
@@ -128,15 +130,18 @@ fn parse_line_en(rd_line: &mut SplitWhitespace) {
             Some(thing) => println!("{}", thing),
             _ => println!("No argument given!"),
         },
+
         Some("balls") => match rd_line.next() {
             Some(thing) =>
                 println!("Balls to {} too", thing),
             _ =>
                 println!("Balls to you too"),
         },
+
         Some("set-lang") => if let Some(new_lang) = rd_line.next() {
             set_lang(new_lang);
         },
+
         None => {},
         _ => println!("Unrecognized command"),
     }
