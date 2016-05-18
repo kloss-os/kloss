@@ -87,7 +87,9 @@ pub unsafe fn getkbd(arg: usize) {
                 read_char += 0x20;
             }
             // Write to buffer
-            buf.write(read_char);
+            if !buf.is_full() {
+                buf.write(read_char);
+            }
             // Set buffer not empty
             io::kbd_buffer_empty = false;
         }

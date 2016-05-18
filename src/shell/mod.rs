@@ -38,7 +38,9 @@ pub fn main(input: &mut Buffer) {
                 print!("{}", current_char as char);
 
                 let mut_buf: &mut Buffer = &mut read_buffer;
-                mut_buf.write(current_char);
+                if !mut_buf.is_full() {
+                    mut_buf.write(current_char);
+                }
 
                 if input.is_empty() {
                     unsafe { io::kbd_buffer_empty = true; }
@@ -55,6 +57,7 @@ pub fn main(input: &mut Buffer) {
             line.push(c as char);
         }
         let ref mut split_line = line.split_whitespace();
+        println!("{}", line);
 
         unsafe {
             match lang {
