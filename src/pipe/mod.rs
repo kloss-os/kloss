@@ -68,15 +68,17 @@ impl Buffer{
             self.rp += 1; 
         }
     }
-
-    // Write Content to current +1 writerpointer address. Check if full. 
+    
+    // Check if full, write Content to current writerpointer address 
+    // then steps once. 
     pub fn write(&mut self, insert: Content){
         assert!(!self.is_full(), "Buffer is full!");
         self.buf[self.wp] = insert;
         self.step_wp(); 
     }
     
-    // Read Content from current +1 reader pointer,
+    // Check if empty, read Content from current reader pointer
+    // then steps once
     pub fn read(&mut self) -> Content {
         assert!(!self.is_empty(), "Reading empty space!");
         let content = self.buf[self.rp];
