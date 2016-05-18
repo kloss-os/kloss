@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 pub type Content = u8;
 
 /// BUFFER_SIZE is set to a low number
-const BUFFER_SIZE: usize = 28;
+const BUFFER_SIZE: usize = 128;
 /// START_POINTER is kind of a test thing since usize would not work as intended
 const START_POINT: usize = 0;
 
@@ -80,6 +80,19 @@ impl Buffer{
 //        self.rp < self.wp
 //    }
 }
+
+/// Implements iterator for buffer, lets you process all unread data.
+impl Iterator for Buffer {
+    type Item = Content;
+    fn next(&mut self) -> Option<Content> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.read())
+        }
+    }
+}
+
 
 #[test]
 fn buffer_add(){
