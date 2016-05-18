@@ -133,13 +133,11 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Final print before infloop
     println!("It did not crash!");
 
-    /*
     unsafe {
         if let Some(ref mut buffer) = io::kbd_buffer {
             shell::main(buffer);
         }
     }
-    */
 
     // Loop to infinity and beyond!
     loop{}
