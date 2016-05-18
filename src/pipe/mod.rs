@@ -245,7 +245,6 @@ fn buffer_write_read_many_times(){
     b.write(6); // wp == 1
     let five = b.read(); // rp == 0
     let six =  b.read(); // rp == 1
-    
     b.write(7); // wp == 2
     let seven = b.read(); // rp == 2
     b.write(8); // wp == 3
