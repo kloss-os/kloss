@@ -5,7 +5,9 @@
 //! performance.
 
 #![feature(concat_idents)]
-
+// Experimental, used to remove section
+// mapping heap during tests
+#![feature(stmt_expr_attributes)]
 #![feature(lang_items)]
 #![feature(const_fn, unique)]
 #![feature(alloc, collections)]
@@ -29,6 +31,7 @@ extern crate x86;
 #[macro_use]
 extern crate once;
 //extern crate bump_allocator;
+#[cfg(not(test))]
 extern crate hole_list_allocator;
 extern crate alloc;
 #[macro_use]
@@ -143,7 +146,7 @@ fn enable_write_protect_bit() {
 }
 
 /// This is an override for a language feature. Don't know what it does.
-#[cfg(not(feature = "tests"))]
+#[cfg(not(test))]
 #[lang = "eh_personality"]
 extern fn eh_personality() {}
 
@@ -151,7 +154,7 @@ extern fn eh_personality() {}
 /// something crashes. This version displays PANIC and a description of
 /// where the panic occurred.  Try invoking the panic!(); macro to see
 /// it in action.
-#[cfg(not(feature = "tests"))]
+#[cfg(not(test))]
 #[lang = "panic_fmt"]
 extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     println!("\n\nPANIC in {} at line {}:", file, line);

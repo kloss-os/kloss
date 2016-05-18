@@ -65,17 +65,20 @@ pub fn init(boot_info: &BootInformation, sdt_loc: &mut SDT_Loc) {
     // ===============================================================
     // Map kernel heap using `active_table`
     // ===============================================================
-
-    use self::paging::Page;
-    use hole_list_allocator::{HEAP_START, HEAP_SIZE};
     
-    // Get start- and end page of heap
-    let heap_start_page = Page::containing_address(HEAP_START);
-    let heap_end_page = Page::containing_address(HEAP_START + HEAP_SIZE-1);
+    #[cfg(not(test))]
+    {
+        use self::paging::Page;
+        use hole_list_allocator::{HEAP_START, HEAP_SIZE};
+        
+        // Get start- and end page of heap
+        let heap_start_page = Page::containing_address(HEAP_START);
+        let heap_end_page = Page::containing_address(HEAP_START + HEAP_SIZE-1);
 
-    // Map all pages used by heap
-    for page in Page::range_inclusive(heap_start_page, heap_end_page) {
-        active_table.map(page, paging::WRITABLE, &mut frame_allocator);
+        // Map all pages used by heap
+        for page in Page::range_inclusive(heap_start_page, heap_end_page) {
+            active_table.map(page, paging::WRITABLE, &mut frame_allocator);
+        }
     }
 
 }
