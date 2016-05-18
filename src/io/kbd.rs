@@ -12,7 +12,7 @@ enum Keycode {
     E_PRESSED = 0x12,   E_RELEASED = 0x92,
     R_PRESSED = 0x13,   R_RELEASED = 0x93,
     T_PRESSED = 0x14,   T_RELEASED = 0x94,
-    Z_PRESSED = 0x15,   Z_RELEASED = 0x95,
+    Y_PRESSED = 0x15,   Y_RELEASED = 0x95,
     U_PRESSED = 0x16,   U_RELEASED = 0x96,
     I_PRESSED = 0x17,   I_RELEASED = 0x97,
     O_PRESSED = 0x18,   O_RELEASED = 0x98,
@@ -26,7 +26,7 @@ enum Keycode {
     J_PRESSED = 0x24,   J_RELEASED = 0xA4,
     K_PRESSED = 0x25,   K_RELEASED = 0xA5,
     L_PRESSED = 0x26,   L_RELEASED = 0xA6,
-    Y_PRESSED = 0x2C,   Y_RELEASED = 0xAC,
+    Z_PRESSED = 0x2C,   Z_RELEASED = 0xAC,
     X_PRESSED = 0x2D,   X_RELEASED = 0xAD,
     C_PRESSED = 0x2E,   C_RELEASED = 0xAE,
     V_PRESSED = 0x2F,   V_RELEASED = 0xAF,
@@ -34,7 +34,7 @@ enum Keycode {
     N_PRESSED = 0x31,   N_RELEASED = 0xB1,
     M_PRESSED = 0x32,   M_RELEASED = 0xB2,
 
-    ZERO_PRESSED    = 0x29,
+    ZERO_PRESSED    = 0xB,
     ONE_PRESSED     = 0x2,
     TWO_PRESSED     = 0x3,
     THREE_PRESSED   = 0x4,
@@ -46,9 +46,10 @@ enum Keycode {
     NINE_PRESSED    = 0xA,
 
     SHIFT_PRESSED = 0x2A, SHIFT_RELEASED = 0xAA,
-    POINT_PRESSED = 0x34, POINT_RELEASED = 0xB4,
 
-    SLASH_RELEASED = 0xB5,
+    POINT_PRESSED   = 0x34, POINT_RELEASED  = 0xB4,
+    SLASH_PRESSED   = 0x35, SLASH_RELEASED  = 0xB5,
+    DASH_PRESSED    = 0x0C, DASH_RELEASED   = 0x8C,
 
     BACKSPACE_PRESSED = 0xE,BACKSPACE_RELEASED = 0x8E,
     SPACE_PRESSED = 0x39,   SPACE_RELEASED = 0xB9,
@@ -73,16 +74,23 @@ pub unsafe fn getkbd(arg: usize) {
           : "{al}"
           : "intel" );
 
+
     if data == Keycode::SHIFT_PRESSED as u8 {
         shift = true;
     } else if data == Keycode::SHIFT_RELEASED as u8 {
         shift = false;
     } else if let Some(ref mut buf) = io::kbd_buffer {
         let mut read_char = data_to_ascii(data);
-        if !shift && 0x41 <= read_char && read_char <= 0x5A {
-            read_char += 0x20
+        if read_char != 0x00 {
+            // Set lower/uppercase
+            if !shift && 0x41 <= read_char && read_char <= 0x5A {
+                read_char += 0x20;
+            }
+            // Write to buffer
+            buf.write(read_char);
+            // Set buffer not empty
+            io::kbd_buffer_empty = false;
         }
-        buf.write(read_char);
         //println!("Value is {}", buf.read() as char);
     }
 
@@ -122,7 +130,21 @@ fn data_to_ascii(data: u8) -> u8 {
         data if data == Keycode::N_PRESSED  as u8 => b'N',
         data if data == Keycode::M_PRESSED  as u8 => b'M',
 
-        data if data == Keycode::ENTER_PRESSED as u8 => 0x0A,
+        data if data == Keycode::ZERO_PRESSED   as u8 => b'0',
+        data if data == Keycode::ONE_PRESSED    as u8 => b'1',
+        data if data == Keycode::TWO_PRESSED    as u8 => b'2',
+        data if data == Keycode::THREE_PRESSED  as u8 => b'3',
+        data if data == Keycode::FOUR_PRESSED   as u8 => b'4',
+        data if data == Keycode::FIVE_PRESSED   as u8 => b'5',
+        data if data == Keycode::SIX_PRESSED    as u8 => b'6',
+        data if data == Keycode::SEVEN_PRESSED  as u8 => b'7',
+        data if data == Keycode::EIGHT_PRESSED  as u8 => b'8',
+        data if data == Keycode::NINE_PRESSED   as u8 => b'9',
+
+        data if data == Keycode::ENTER_PRESSED  as u8 => b'\n',
+        data if data == Keycode::SPACE_PRESSED  as u8 => b' ',
+        data if data == Keycode::DASH_PRESSED   as u8 => b'-',
+        data if data == Keycode::SLASH_PRESSED  as u8 => b'-',
 
         data if data == Keycode::BACKSPACE_PRESSED as u8 => 0x08,
         _ => 0x00,

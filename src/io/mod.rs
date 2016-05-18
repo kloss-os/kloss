@@ -9,10 +9,13 @@ use core::intrinsics::{volatile_load, volatile_store};
 use alloc::boxed::Box;
 use irq;
 
-use pipe::Buffer;
 
 pub mod kbd;
+
+// TODO: Put the following into a scheduler
+use pipe::Buffer;
 pub static mut kbd_buffer: Option<Buffer> = None;
+pub static mut kbd_buffer_empty: bool = true;
 
 
 static mut LAPIC_BASE: usize = 0;
