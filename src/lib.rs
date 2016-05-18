@@ -48,6 +48,9 @@ mod arch;
 
 mod msr;
 mod pipe;
+
+mod shell;
+
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
@@ -88,6 +91,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // kernel-remap and all other memory-related set-up
     memory::init(boot_info, sdt_loc);
 
+    io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
+
     println!("Setting up the IDT!");
     unsafe{
         // Install IRQ
@@ -96,7 +101,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         x86::irq::enable();
     }
 
-    io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
     // ======================================================
     // Test heap
@@ -125,6 +129,14 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     // Final print before infloop
     println!("It did not crash!");
+
+    /*
+    unsafe {
+        if let Some(ref mut buffer) = io::kbd_buffer {
+            shell::main(buffer);
+        }
+    }
+    */
 
     // Loop to infinity and beyond!
     loop{}

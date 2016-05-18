@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 pub type Content = u8;
 
 /// BUFFER_SIZE is set to a low number
-const BUFFER_SIZE: usize = 5;
+const BUFFER_SIZE: usize = 28;
 /// START_POINTER is kind of a test thing since usize would not work as intended
 const START_POINT: usize = 0;
 
@@ -67,7 +67,7 @@ impl Buffer{
         self.buf[self.wp] = insert;
 
     }
-    
+
     // Read Content from current +1 reader pointer,
     pub fn read(&mut self) -> Content {
         assert!(!self.is_empty(), "Reading empty space!");
@@ -75,6 +75,10 @@ impl Buffer{
         //self.rp = self.rp +1;
         self.buf[self.rp]
     }
+
+//    pub fn unread(&mut self) -> bool {
+//        self.rp < self.wp
+//    }
 }
 
 #[test]
