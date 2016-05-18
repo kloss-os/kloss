@@ -112,7 +112,7 @@ gdb:
 test: cargo_test sys_test
 
 cargo_test:
-	cargo test --features tests
+	cargo test
 	@echo ""
 
 
