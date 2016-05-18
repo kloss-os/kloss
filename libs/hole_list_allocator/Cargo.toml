@@ -5,9 +5,7 @@ authors = ["Simon Lövgren <lovgren.simon@gmail.com>"]
 
 [dependencies]
 spin = "0.3.4"
-
-[dependencies.linked_list_allocator]
-git = "https://github.com/phil-opp/linked-list-allocator.git"
+linked_list_allocator = "0.2.2"
 
 [dependencies.lazy_static]
 version = "0.2.1"
