@@ -46,10 +46,10 @@ pub struct Page {
 
 impl Page {
     /// The address space is split into two halves , high/low, where the higher
-    /// half contains addresses and the sign extentions, the lower half contains 
+    /// half contains addresses and the sign extentions, the lower half contains
     /// just adresses. This is checked here with an assert.
     pub fn containing_address(address: VirtualAddress) -> Page {
-    assert!(address < 0x0000_8000_0000_0000 || 
+    assert!(address < 0x0000_8000_0000_0000 ||
             address >= 0xffff_8000_0000_0000,
             "invalid address: 0x{:x}", address);
         Page { number: address / PAGE_SIZE }
@@ -138,7 +138,7 @@ impl ActivePageTable {
             mapper: Mapper::new(),
         }
     }
-    /// Module that temporarily changes the recursive mapping. 
+    /// Module that temporarily changes the recursive mapping.
     /// It overwrites the 511th P4 entry and points it to the
     /// inactive table frame.
     /// "It overwrites the 511th P4 entry and points it to the inactive table frame. Then it flushes the translation lookaside buffer (TLB), which still contains some old translations. We need to flush all pages that are part of the recursive mapping, so the easiest way is to flush the TLB completely.""
@@ -150,32 +150,32 @@ impl ActivePageTable {
     {
         use x86::{controlregs, tlb};
         let flush_tlb = || unsafe { tlb::flush_all() };
-        
+
         {
             let backup = Frame::containing_address (
                 unsafe { controlregs::cr3() } as usize);
-            
+
             // map temporary_page to current p4 table
             let p4_table = temporary_page.map_table_frame(backup.clone(), self);
-            
+
             // overwrite recursive mapping
             self.p4_mut()[511].set(table.p4_frame.clone(), PRESENT | WRITABLE);
             flush_tlb();
-            
+
             // execute f in the new context
             f(self);
-            
+
             // restore recursive mapping to original p4 table
             p4_table[511].set(backup, PRESENT | WRITABLE);
             flush_tlb();
         }
-        
+
         temporary_page.unmap(self);
     }
-    
+
     pub fn switch(&mut self, new_table: InactivePageTable) -> InactivePageTable {
         use x86::controlregs;
-        
+
         let old_table = InactivePageTable {
             p4_frame: Frame::containing_address(
                 unsafe { controlregs::cr3() } as usize),
@@ -197,9 +197,9 @@ impl InactivePageTable {
                temporary_page: &mut TemporaryPage)
                -> InactivePageTable {
         {
-            
-            // The 'active_table' and 'temporary_table' arguments needs to 
-            // be in a inner scope to ensure shadowing since the table 
+
+            // The 'active_table' and 'temporary_table' arguments needs to
+            // be in a inner scope to ensure shadowing since the table
             // variable exclusively borrows temporary_page as long as it's alive
             let table = temporary_page.map_table_frame(frame.clone(),
             active_table);
@@ -210,7 +210,7 @@ impl InactivePageTable {
         }
         temporary_page.unmap(active_table);
 
-        InactivePageTable {p4_frame: frame } 
+        InactivePageTable {p4_frame: frame }
     }
 }
 /// Remaps the kernel sections by creating a temporary page.
@@ -219,7 +219,7 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
     where A: FrameAllocator{
     use core::ops::Range;
     // Create a temporary page at some page number, in this case 0xcafebabe
-    let mut temporary_page = 
+    let mut temporary_page =
         TemporaryPage::new(Page { number: 0xcafebabe }, allocator);
     // Created by constructor
     let mut active_table = unsafe { ActivePageTable::new() };
@@ -233,7 +233,7 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
         let elf_sections_tag = boot_info.elf_sections_tag()
             .expect("Memory map tag required");
         // Identity map the allocated kernel sections
-        // Skip sections that are not loaded to memory. 
+        // Skip sections that are not loaded to memory.
         // We require pages to be aligned, see src/arch/x86_64/linker.ld for implementations
         for section in elf_sections_tag.sections() {
             if !section.is_allocated() {
@@ -243,9 +243,9 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
 
             assert!(section.addr as usize % PAGE_SIZE == 0,
                     "sections need to be page aligned");
-            println!("mapping section at addr: {:#x}, size: {:#x}",
-                     section.addr,
-                     section.size);
+            // println!("mapping section at addr: {:#x}, size: {:#x}",
+            //          section.addr,
+            //          section.size);
 
             let flags = EntryFlags::from_elf_section_flags(section);
 
@@ -274,7 +274,7 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
 
 
         for (start, end, next) in &mut sdt_loc.into_iter() {
-            println!("Allocating addresses {:x} to {:x} and {:x}", start, end, next);
+            //println!("Allocating addresses {:x} to {:x} and {:x}", start, end, next);
             let start_addr = Frame::containing_address(start);
             let end_addr = Frame::containing_address(end);
             for frame in Frame::range_inclusive(start_addr, end_addr) {
@@ -309,12 +309,12 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation, sdt_l
     });
     // TODO: Delete when appropriate
     let old_table = active_table.switch(new_table);
-    println!("NEW TABLE!!!");
+    //println!("NEW TABLE!!!");
 
     // TODO: Delete when appropriate
     let old_p4_page = Page::containing_address(old_table.p4_frame.start_address());
     active_table.unmap(old_p4_page, allocator);
-    println!("guard page at {:#x}", old_p4_page.start_address());
+    //println!("guard page at {:#x}", old_p4_page.start_address());
 
     active_table
 }
@@ -337,16 +337,16 @@ pub fn test_paging<A>(allocator: &mut A)
      // second P2 entry
     println!("Some = {:?}", page_table.translate(512 * 4096));
     // 300th P2 entry
-    println!("Some = {:?}", page_table.translate(300 * 512 * 4096)); 
+    println!("Some = {:?}", page_table.translate(300 * 512 * 4096));
     // second P3 entry
-    println!("None = {:?}", page_table.translate(512 * 512 * 4096)); 
+    println!("None = {:?}", page_table.translate(512 * 512 * 4096));
     // last mapped byte
-    println!("Some = {:?}", page_table.translate(512 * 512 * 4096 - 1)); 
+    println!("Some = {:?}", page_table.translate(512 * 512 * 4096 - 1));
 
     // test map_to
 
     // 42th P3 entry
-    let addr = 42 * 512 * 512 * 4096; 
+    let addr = 42 * 512 * 512 * 4096;
     let page = Page::containing_address(addr);
     let frame = allocator.allocate_frame().expect("no more frames");
     println!("None = {:?}, map to {:?}",

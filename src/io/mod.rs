@@ -124,8 +124,8 @@ pub unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
     let res_kbd_hi = read_ioapic(ioapicaddr, KBD_IOWIN_HI);
     let res_kbd_lo = read_ioapic(ioapicaddr, KBD_IOWIN_LO);
 
-    println!("KBD INT HI: {:x}, KBD INT LO: {:x}",
-             res_kbd_hi, res_kbd_lo);
+    // println!("KBD INT HI: {:x}, KBD INT LO: {:x}",
+    //          res_kbd_hi, res_kbd_lo);
 }
 
 

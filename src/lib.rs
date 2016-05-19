@@ -93,6 +93,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // kernel-remap and all other memory-related set-up
     memory::init(boot_info, sdt_loc);
 
+    println!("Memory initialisation completed!");
+
     unsafe{
         // Install IRQ
         irq::install();
@@ -109,38 +111,20 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
-    // ======================================================
-    // Test heap
-    // ======================================================
-
-    use alloc::boxed::Box;
-    use collections::String;
-    let heap_test = Box::new(42);
-
-    let v = vec![1,2,3,4,5];
-    for i in &v {
-        print!("{}", i);
-    }
-
-    let hello = String::from("Hello from heap!");
-    println!("{}",hello);
-
-    // ======================================================
-    // EOF Test heap
-    // ======================================================
-
-    // Final print before infloop
-    println!("It did not crash!");
+    println!("I/O and interrupt subsystem installed!");
 
     timers::init();
 
+    println!("Timer/scheduling system initialised!");
 
     // Enable global interrupts!
     unsafe {x86::irq::enable(); }
 
+    println!("Global interrupts enabled!");
+
     // Loop to infinity and beyond!
 
-    timers::busy_sleep(1);
+    //timers::busy_sleep(1);
 
     loop{}
 }
