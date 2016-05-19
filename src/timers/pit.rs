@@ -5,6 +5,8 @@ use x86::io::{inb, outb};
 
 use io::{send_LAPIC_EOI};
 
+//use core::atomic::{AtomicUsize, Ordering};
+
 // IO Port Addresess
 
 /// This is the system channel control register.
@@ -87,6 +89,9 @@ pub const RATE_1_MS : u16 = 1193;
 pub const RATE_HALF_MS : u16 = 597;
 
 
+/// A tick counter
+static mut PIT_COUNTER : usize = 0;
+
 
 /// Set the system timer. Formula is apparently: time in ms = divisor /
 /// (3579545 / 3) * 1000. 0 is the special max value, meaning
@@ -109,8 +114,8 @@ pub fn set_timer(divisor : u16) {
         }
 }
 
-/// Initialise the channel 0 PIT timer in Interrupt Terminal mode. It
-/// will trigger IRQ 0 every ms, approximately.
+/// Initialise the channel 0 PIT timer in Square Wave mode for use as a
+/// system timer. It will trigger IRQ 0 every ms, approximately.
 ///
 /// Note that you must also have set up a reasonable ISR for the
 /// relevant interrupt vector _before_ calling this function!
@@ -122,9 +127,14 @@ pub fn init() {
 /// Function to call when the PIT times out.
 /// Argument is ignored.
 pub unsafe fn handle_timeout(_iv : usize) {
-    println!("Timer reset! Now at {}", read_count());
+    //println!("Timer reset! Now at {}", read_count());
 
-    //set_timer(RATE_1_MS);
+    set_timer(RATE_1_MS);
+    unsafe {
+        // Nope, no race conditions here!
+        outb(PIT_PORT_CHANNEL0, 0);
+        PIT_COUNTER = PIT_COUNTER + 1
+    }
 
     // Send the End-of-Interrupt (EOI) signal to LAPIC:
     send_LAPIC_EOI();
@@ -145,4 +155,15 @@ pub fn read_count() -> u16 {
         (low | high << 8)
     }
 
+}
+
+/// Get the global tick count since the timer was started.
+pub fn get_ticks() -> usize {
+    unsafe {PIT_COUNTER}
+}
+
+/// Determine the number of milliseconds passed for each tick (as given
+/// by `get_ticks()`).
+pub fn ms_per_tick() -> u64 {
+    1 // FIXME
 }

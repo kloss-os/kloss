@@ -23,6 +23,13 @@ pub fn init() {
 
 
 /// Busy sleep for ms milliseconds.
-pub fn busy_sleep(ms : u32) {
+pub fn busy_sleep(ms : usize) {
+    let start_time = pit::get_ticks();
+    let rate = pit::ms_per_tick();
+
+    while (pit::get_ticks() - start_time) < ms {
+        println!("Sleeping, current no ticks: {}", pit::get_ticks());
+        // do nothing
+    }
 
 }
