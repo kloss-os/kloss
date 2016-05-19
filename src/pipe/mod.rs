@@ -53,7 +53,7 @@ impl Buffer{
 
     // Steps writer one step forward, circle aspect included
     pub fn step_wp(&mut self){
-        if self.wp == 4 { //&& self.rp != START_POINT{
+        if self.wp == (BUFFER_SIZE -1) { //&& self.rp != START_POINT{
             self.wp = START_POINT; 
         } else {
             self.wp += 1; 
@@ -62,7 +62,7 @@ impl Buffer{
 
     // Steps reader one step forward, circle aspect included 
     pub fn step_rp(&mut self){
-        if self.rp == 4 { // && self.wp != START_POINT{
+        if self.rp == (BUFFER_SIZE -1) { // && self.wp != START_POINT{
             self.rp = START_POINT; 
         } else {
             self.rp += 1; 
