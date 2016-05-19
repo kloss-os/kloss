@@ -139,7 +139,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     unsafe {
         if let Some(ref mut buffer) = io::kbd_buffer {
-            shell::main(buffer);
+            let mut shell = shell::Shell::new();
+            shell.run(buffer);
         }
     }
 
