@@ -124,6 +124,10 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     // Loop to infinity and beyond!
 
+    println!("Going to sleep!");
+    timers::busy_sleep(15);
+    println!("Done sleeping!");
+
     loop {}
 }
 

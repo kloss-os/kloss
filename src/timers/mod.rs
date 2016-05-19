@@ -9,7 +9,7 @@ const SLEEP_TOLERANCE_TICKS : u16 = 100;
 
 use irq::set_handler;
 
-pub mod pit;
+mod pit;
 
 mod apict;
 
@@ -44,9 +44,8 @@ pub fn busy_sleep(ms : usize) {
 /// Function to call when the timer times out.
 /// Argument is ignored.
 unsafe fn handle_timeout(_iv : usize) {
-    println!("Timer reset! Now at {}", TICK_COUNTER);
+    //println!("Timer reset! Now at {}", TICK_COUNTER);
 
-    //set_timer(RATE_MAX);
     unsafe {
 
         // Nope, no race conditions here!
