@@ -93,7 +93,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // kernel-remap and all other memory-related set-up
     memory::init(boot_info, sdt_loc);
 
-    println!("Setting up the IDT!");
     unsafe{
         // Install IRQ
         irq::install();
@@ -106,9 +105,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         irq::idt::set_gate(255, irq::isr_null,
                            irq::idt::SELECT_TARGET_PRIV_1,
                            irq::DEFAULT_FLAGS);
-
-        // Enable global interrupts!
-        x86::irq::enable();
     }
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
@@ -136,9 +132,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Final print before infloop
     println!("It did not crash!");
 
-    // Loop to infinity and beyond!
+    timers::init();
 
-    timers::pit::init();
+
+    // Enable global interrupts!
+    unsafe {x86::irq::enable(); }
+
+    // Loop to infinity and beyond!
 
     loop{}
 }
@@ -178,9 +178,9 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-// These functions are called from the ASM interrupt wrappers, and they
-// need to be here, unfortunately.
 
+/// This is a static entry point for the ASM interrupt wrappers to hook
+/// into. It has to be here, unfortunately.
 #[no_mangle]
 pub extern fn rust_interrupt_handler(intnr: usize) {
     irq::entry(intnr);

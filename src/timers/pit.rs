@@ -1,13 +1,17 @@
 //! This module manages the PIT timer, specifically.  For more
 //! information about the PIT, please see http://wiki.osdev.org/PIT
 
-extern crate x86;
+use x86::io::{inb, outb};
 
 // IO Port Addresess
 
 /// This is the system channel control register.
 const PIT_PORT_CHANNEL0     : u16 = 0x40;
+
+/// This is the channel 1 control register.
 const PIT_PORT_CHANNEL1     : u16 = 0x41;
+
+/// This is the channel 2 control register.
 const PIT_PORT_CHANNEL2     : u16 = 0x42;
 
 /// This is the IO Port number for the PIT command register.
@@ -27,6 +31,8 @@ const PIT_CHANNEL_SELECT_2    : u8 = 0b_10_000000;
 /// Select PIT Channel 0
 const PIT_SELECT_READBACK     : u8 = 0b_11_000000;
 
+/// Latch the counter (pause timer) so that we can read back the current
+/// count.
 const PIT_ACCESS_LATCH_COUNT          : u8 = 0b_00_00_0000;
 
 /// Write the lower byte of the counter register
@@ -61,8 +67,45 @@ const PIT_16_BIT_BINARY     : u8 = 0b0;
 /// implementation of the counter register format. Don't use it.
 const PIT_4_BIT_BCD         : u8 = 0b1;
 
-/// A reasonable frequency for the PIT
-const PIT_FREQUENCY_MILLIHZ : u32 = 1193182; // mHz
+/// The standard frequency of the PIT, in Hz.
+const PIT_FREQUENCY_HZ : u32 = 119318;
+
+/// The maximum possible rate (except =0, if that's supported...).  =
+/// 54.924... ms.
+pub const MAX_RATE : u16 = 2^16 -1;
+
+/// The minimum possible rate. Far, far lower than a ms. Probably only
+/// jitter.
+pub const MIN_RATE : u16 = 1;
+
+/// The rate to use to get exactly one ms delay.
+pub const RATE_1_MS : u16 = 1193;
+
+/// The rate to use to get half a ms delay.
+pub const RATE_HALF_MS : u16 = 597;
+
+
+
+/// Set the system timer. Formula is apparently: time in ms = divisor /
+/// (3579545 / 3) * 1000. 0 is the special max value, meaning
+/// divisor 65536 = 55 ms. Maybe. Depends on hardware.
+pub fn set_timer(divisor : u16) {
+    let options = PIT_CHANNEL_SELECT_0
+        | PIT_16_BIT_BINARY
+        | PIT_ACCESS_LATCH_LOBYTE_HIBYTE
+        | PIT_OPERATING_MODE_INTERRUPT_TERMINAL;
+
+    unsafe {
+        // prime a request
+        outb(PIT_PORT_CMD, options);
+
+        // First write the lower byte
+        outb(PIT_PORT_CHANNEL0, divisor as u8);
+
+        // ...then write the upper byte
+        outb(PIT_PORT_CHANNEL0, (divisor >> 8) as u8);
+        }
+}
 
 /// Initialise the channel 0 PIT timer in Interrupt Terminal mode. It
 /// will trigger IRQ 0 every NN ms, approximately.
@@ -71,18 +114,30 @@ const PIT_FREQUENCY_MILLIHZ : u32 = 1193182; // mHz
 /// relevant interrupt vector _before_ calling this function!
 pub fn init() {
 
-    let divisor = (PIT_FREQUENCY_MILLIHZ / 1000) as u16; // Hz
-    let options = PIT_CHANNEL_SELECT_0 | PIT_16_BIT_BINARY
-        | PIT_ACCESS_LATCH_COUNT | PIT_ACCESS_LATCH_LOBYTE_HIBYTE;
+    set_timer(RATE_1_MS);
+}
+
+/// Function to call when the PIT times out.
+/// Argument is ignored.
+pub unsafe fn handle_timeout(_iv : usize) {
+    println!("Timer reset! Now at {}", read_count());
+
+    set_timer(RATE_1_MS);
+}
+
+/// Latch the PIT and read its current count.
+pub fn read_count() -> u16 {
 
     unsafe {
-        // prime a request
-        x86::io::outb(PIT_PORT_CMD, options);
 
-        // First write the lower byte
-        x86::io::outb(PIT_PORT_CHANNEL0, divisor as u8);
+        // We want to read the latch count
+        outb(PIT_PORT_CMD, PIT_ACCESS_LATCH_COUNT);
 
-        // ...then write the upper byte
-        x86::io::outb(PIT_PORT_CHANNEL0, (divisor >> 8) as u8);
-        }
+        let low = inb(PIT_PORT_CHANNEL0) as u16;
+        let high = inb(PIT_PORT_CHANNEL0) as u16;
+
+        // Re-assemble a 2-byte number:
+        (low | high << 8)
+    }
+
 }
