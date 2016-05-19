@@ -95,6 +95,12 @@ impl Writer {
         }
     }
 
+
+    /// Moves column position one step left
+    pub fn move_left(&mut self) {
+        self.column_position -= 1;
+    }
+
     /// Internal helper function. Get a mutable reference to the
     /// buffer. That `unsafe` block is sort of worrying.
     fn buffer(&mut self) -> &mut Buffer {
@@ -163,4 +169,9 @@ pub fn clear_screen() {
     for _ in 0..BUFFER_HEIGHT {
         println!("");
     }
+}
+
+/// Helper function: Moves the current slice one step left
+pub fn step_left() {
+    WRITER.lock().move_left();
 }
