@@ -3,6 +3,8 @@
 
 use x86::io::{inb, outb};
 
+use io::{send_LAPIC_EOI};
+
 // IO Port Addresess
 
 /// This is the system channel control register.
@@ -90,10 +92,10 @@ pub const RATE_HALF_MS : u16 = 597;
 /// (3579545 / 3) * 1000. 0 is the special max value, meaning
 /// divisor 65536 = 55 ms. Maybe. Depends on hardware.
 pub fn set_timer(divisor : u16) {
-    let options = PIT_CHANNEL_SELECT_0
-        | PIT_16_BIT_BINARY
-        | PIT_ACCESS_LATCH_LOBYTE_HIBYTE
-        | PIT_OPERATING_MODE_INTERRUPT_TERMINAL;
+    let options = PIT_CHANNEL_SELECT_0   // program channel 0
+        | PIT_16_BIT_BINARY              // store counter as 16-bit binary
+        | PIT_ACCESS_LATCH_LOBYTE_HIBYTE // write first low byte, then high byte
+        | PIT_OPERATING_MODE_SQWAVE;     // set operating mode 3
 
     unsafe {
         // prime a request
@@ -108,7 +110,7 @@ pub fn set_timer(divisor : u16) {
 }
 
 /// Initialise the channel 0 PIT timer in Interrupt Terminal mode. It
-/// will trigger IRQ 0 every NN ms, approximately.
+/// will trigger IRQ 0 every ms, approximately.
 ///
 /// Note that you must also have set up a reasonable ISR for the
 /// relevant interrupt vector _before_ calling this function!
@@ -122,7 +124,10 @@ pub fn init() {
 pub unsafe fn handle_timeout(_iv : usize) {
     println!("Timer reset! Now at {}", read_count());
 
-    set_timer(RATE_1_MS);
+    //set_timer(RATE_1_MS);
+
+    // Send the End-of-Interrupt (EOI) signal to LAPIC:
+    send_LAPIC_EOI();
 }
 
 /// Latch the PIT and read its current count.
