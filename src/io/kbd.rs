@@ -54,6 +54,9 @@ enum Keycode {
     BACKSPACE_PRESSED = 0xE,BACKSPACE_RELEASED = 0x8E,
     SPACE_PRESSED = 0x39,   SPACE_RELEASED = 0xB9,
     ENTER_PRESSED = 0x1C,   ENTER_RELEASED = 0x9C,
+
+    UP_RELEASED = 0xC8,     DOWN_RELEASED = 0xD0,
+    LEFT_RELEASED = 0xCB,   RIGHT_RELEASED = 0xCD,
 }
 
 static mut shift: bool = false;
@@ -149,6 +152,12 @@ fn data_to_ascii(data: u8) -> u8 {
         data if data == Keycode::SLASH_PRESSED  as u8 => b'-',
 
         data if data == Keycode::BACKSPACE_PRESSED as u8 => 0x08,
+
+
+        //data if data == Keycode::LEFT_RELEASED  as u8 => 0x80,
+        //data if data == Keycode::RIGHT_RELEASED as u8 => 0x81,
+        //data if data == Keycode::UP_RELEASED    as u8 => 0x82,
+        //data if data == Keycode::DOWN_RELEASED  as u8 => 0x83,
         _ => 0x00,
     }
 }
