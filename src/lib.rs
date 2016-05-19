@@ -99,9 +99,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         // Install IRQ
         irq::install();
 
-        // Redirect spurious interrupts
-        acpi::apic::redirect_spurious(sdt_loc.lapic_ctrl, 255);
-
         // Register the null interrupt handler for the spurious
         // interrupt vector.
         irq::idt::set_gate(255, irq::isr_null,
@@ -111,22 +108,23 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
+    // Redirect spurious interrupts
+    unsafe {acpi::apic::redirect_spurious(sdt_loc.lapic_ctrl, 255)}
+
     println!("I/O and interrupt subsystem installed!");
 
-    timers::init();
+    timers::init(sdt_loc.lapic_ctrl);
 
     println!("Timer/scheduling system initialised!");
 
-    // Enable global interrupts!
-    unsafe {x86::irq::enable(); }
-
     println!("Global interrupts enabled!");
+
+    // Enable global interrupts!
+    unsafe {x86::irq::enable()};
 
     // Loop to infinity and beyond!
 
-    //timers::busy_sleep(1);
-
-    loop{}
+    loop {}
 }
 
 

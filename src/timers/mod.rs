@@ -11,26 +11,53 @@ use irq::set_handler;
 
 pub mod pit;
 
+mod apict;
+
+use io::{send_LAPIC_EOI};
+
+/// A tick counter
+static mut TICK_COUNTER : usize = 0;
+
 /// Initialise the timer infrastructure. Please note that you must have
 /// previously set up the IDT using `irq::install()`!
-pub fn init() {
+pub fn init(apic_addr: usize) {
 
     // Init the PIT
-    self::pit::init();
+    //self::pit::init();
 
-    set_handler(IRQ0_VEC, self::pit::handle_timeout);
+    set_handler(IRQ0_VEC, self::handle_timeout);
+
+    apict::init(apic_addr, 4_000_000);
 }
 
 
 /// Busy sleep for ms milliseconds.
 pub fn busy_sleep(ms : usize) {
-    let start_time = pit::get_ticks();
-    let rate = pit::ms_per_tick();
+    let start_time = get_ticks();
 
-    while (pit::get_ticks() - start_time) < ms {
-        println!("Sleeping, current no ticks: {}. Timer counter: {} ", pit::get_ticks(),
-                 pit::read_count());
+    while (get_ticks() - start_time) < ms {
         // do nothing
     }
 
+}
+
+/// Function to call when the timer times out.
+/// Argument is ignored.
+unsafe fn handle_timeout(_iv : usize) {
+    println!("Timer reset! Now at {}", TICK_COUNTER);
+
+    //set_timer(RATE_MAX);
+    unsafe {
+
+        // Nope, no race conditions here!
+        TICK_COUNTER += 1;
+    }
+
+    // Send the End-of-Interrupt (EOI) signal to LAPIC:
+    send_LAPIC_EOI();
+}
+
+/// Get the global tick count since the timer was started.
+pub fn get_ticks() -> usize {
+    unsafe {TICK_COUNTER}
 }

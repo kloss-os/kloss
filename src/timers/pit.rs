@@ -3,8 +3,6 @@
 
 use x86::io::{inb, outb};
 
-use io::{send_LAPIC_EOI};
-
 //use core::atomic::{AtomicUsize, Ordering};
 
 // IO Port Addresess
@@ -89,10 +87,6 @@ pub const RATE_1_MS : u16 = 1193;
 pub const RATE_HALF_MS : u16 = 597;
 
 
-/// A tick counter
-static mut PIT_COUNTER : usize = 0;
-
-
 /// Set the system timer. Formula is apparently: time in ms = divisor /
 /// (3579545 / 3) * 1000. 0 is the special max value, meaning
 /// divisor 65536 = 55 ms. Maybe. Depends on hardware.
@@ -124,23 +118,6 @@ pub fn init() {
     set_timer(RATE_1_MS);
 }
 
-/// Function to call when the PIT times out.
-/// Argument is ignored.
-pub unsafe fn handle_timeout(_iv : usize) {
-    //println!("Timer reset! Now at {}", read_count());
-
-    //set_timer(RATE_MAX);
-    unsafe {
-        //outb(PIT_PORT_CHANNEL0, );
-
-        // Nope, no race conditions here!
-        PIT_COUNTER = PIT_COUNTER + 1
-    }
-
-    // Send the End-of-Interrupt (EOI) signal to LAPIC:
-    send_LAPIC_EOI();
-}
-
 /// Latch the PIT and read its current count.
 pub fn read_count() -> u16 {
 
@@ -156,11 +133,6 @@ pub fn read_count() -> u16 {
         (low | high << 8)
     }
 
-}
-
-/// Get the global tick count since the timer was started.
-pub fn get_ticks() -> usize {
-    unsafe {PIT_COUNTER}
 }
 
 /// Determine the number of milliseconds passed for each tick (as given
