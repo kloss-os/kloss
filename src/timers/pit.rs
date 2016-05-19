@@ -76,11 +76,11 @@ const PIT_FREQUENCY_HZ : u32 = 119318;
 
 /// The maximum possible rate (except =0, if that's supported...).  =
 /// 54.924... ms.
-pub const MAX_RATE : u16 = 2^16 -1;
+pub const RATE_MAX : u16 = 2^16 -1;
 
 /// The minimum possible rate. Far, far lower than a ms. Probably only
 /// jitter.
-pub const MIN_RATE : u16 = 1;
+pub const RATE_MIN : u16 = 1;
 
 /// The rate to use to get exactly one ms delay.
 pub const RATE_1_MS : u16 = 1193;
@@ -129,10 +129,11 @@ pub fn init() {
 pub unsafe fn handle_timeout(_iv : usize) {
     //println!("Timer reset! Now at {}", read_count());
 
-    set_timer(RATE_1_MS);
+    //set_timer(RATE_MAX);
     unsafe {
+        //outb(PIT_PORT_CHANNEL0, );
+
         // Nope, no race conditions here!
-        outb(PIT_PORT_CHANNEL0, 0);
         PIT_COUNTER = PIT_COUNTER + 1
     }
 

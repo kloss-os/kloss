@@ -18,7 +18,7 @@ pub fn init() {
     // Init the PIT
     self::pit::init();
 
-     set_handler(IRQ0_VEC, self::pit::handle_timeout);
+    set_handler(IRQ0_VEC, self::pit::handle_timeout);
 }
 
 
@@ -28,7 +28,8 @@ pub fn busy_sleep(ms : usize) {
     let rate = pit::ms_per_tick();
 
     while (pit::get_ticks() - start_time) < ms {
-        println!("Sleeping, current no ticks: {}", pit::get_ticks());
+        println!("Sleeping, current no ticks: {}. Timer counter: {} ", pit::get_ticks(),
+                 pit::read_count());
         // do nothing
     }
 
