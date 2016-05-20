@@ -50,7 +50,7 @@ mod irq;
 mod arch;
 
 mod msr;
-
+mod pipe;
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
@@ -107,15 +107,24 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     use alloc::boxed::Box;
     use collections::String;
-    let heap_test = Box::new(42);
+    // let heap_test = Box::new(42);
 
-    let v = vec![1,2,3,4,5];
-    for i in &v {
-        print!("{}", i);
-    }
+    //let v = vec![1,2,3,4,5];
+    //for i in &v {
+    //    print!("{}", i);
+    //}
 
-    let hello = String::from("Hello from heap!");
-    println!("{}",hello);
+    //let hello = String::from("Hello from heap!");
+    //println!("{}",hello);
+    
+    use pipe::Buffer;
+        
+    let mut buffer = Buffer::new();
+    buffer.write(42);
+    println!("{}", buffer.read());
+
+    
+
 
     // ======================================================
     // EOF Test heap
@@ -176,3 +185,5 @@ pub extern fn rust_exception_handler() {
     println!("Handled exception!");
     irq::entry(0);
 }
+
+
