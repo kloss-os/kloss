@@ -60,6 +60,7 @@ struct Buffer {
 pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
+    color_alt: ColorCode,
     buffer: Unique<Buffer>,
 }
 
@@ -87,6 +88,13 @@ impl Writer {
         }
     }
 
+    /// Switches color scheme to alt in struct
+    fn switch_color(&mut self) {
+        let temp_color = self.color_code;
+        self.color_code = self.color_alt;
+        self.color_alt = temp_color;
+    }
+
     /// Write an entire string to screen, possibly clipping it if it
     /// turns out to be too long. Should not contain Unicode characters.
     pub fn write_str(&mut self, s: &str) {
@@ -109,6 +117,7 @@ impl Writer {
 
     /// Print a simple newline.
     fn new_line(&mut self) {
+        self.switch_color();
         for row in 0..(BUFFER_HEIGHT-1) {
             let buffer = self.buffer();
             buffer.chars[row] = buffer.chars[row + 1]
@@ -146,7 +155,8 @@ impl ::core::fmt::Write for Writer {
 /// *this* writer, which is universally spin-locked for mutual exclusion.
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
     column_position: 0,
-    color_code: ColorCode::new(Color::White, Color::Cyan),
+    color_code: ColorCode::new(Color::LightBlue, Color::White),
+    color_alt: ColorCode::new(Color::Cyan, Color::White),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
 
