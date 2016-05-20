@@ -1,6 +1,6 @@
-//! # Shell
-//! _Very_ barebones shell system
-//! Run by creating a shell, followed by implementation run
+//! _Very_ barebones, sloppy, implementation of a shell
+//!
+//! Run by creating a shell, followed by implementation:
 //!
 //! ```
 //! mod shell;
@@ -14,19 +14,32 @@
 //!
 //!
 //! Current accepted commands:
-//! + `print [word | '-msr'] [register]`
-//!     - Prints either word or the msr register given
-//!     - `skriv` in Swedish
-//! + `set-lang ['sv' | 'en']`
-//!     - Sets language to Swedish, English respectively
+//!
+//! + `echo _WORD_`
+//!     - Prints _WORD_
+//!     - `eko` in Swedish
+//! + `msr _REGISTER_`
+//!     - Prints _REGISTER_, provided it is an integer
+//!     - `msr` in Swedish
+//! + `history`
+//!     - Prints the previously entered commands
+//!     - `historik` in Swedish
+//! + `set-lang _LANG_`
+//!     - Sets language to Swedish (sv), English (en) respectively
 //!     - `utse-uttrycksmedel` in Swedish
-//! + `set-prompt arg`
-//!     - Sets current prompt to arg
+//! + `set-prompt _ARG_`
+//!     - Sets current prompt to _ARG_
+//!     - `utse-kommandoprompt` in Swedish
+//! + `clear`
+//!     - Clears screen
+//!     - `rensa` in Swedish
+
 
 use collections::String;
 use collections::str::SplitWhitespace;
 use collections::str::FromStr;
 use collections::vec::Vec;
+
 
 use vga_buffer;
 
@@ -47,10 +60,15 @@ const en_prompt: &'static str = "ultra_user@BanjOS: ";
 const sv_prompt: &'static str = "ultra_anv@BanjOS: ";
 
 
+/// Struct for the Shell, this could allow multiple TTY:s if one would like
 pub struct Shell {
+    /// Language currently set
     current_lang: Lang,
+    /// The prompt (start of each new line)
     prompt: String,
+    /// Vector containing previously entered lines
     history: Vec<String>,
+    /// Index of current line
     cur_line: usize,
 }
 
@@ -146,32 +164,40 @@ impl Shell {
     /// Parses arguments in swedish
     fn parse_line_sv(&mut self, rd_line: &mut SplitWhitespace) {
         match rd_line.next() {
-            Some("skriv") => match rd_line.next() {
-                // NOTE: UNSAFE! CAN BREAK WHAT YOU'RE DOING! CAUTION!
-                Some("-msr") => if let Some(reg) = rd_line.next() {
-                    if let Ok(regnum) = u32::from_str(reg) {
-                        println!("Registret {} har informationen 0x{:x}",
-                                 reg, unsafe {msr::read_msr(regnum)} );
-                    } else {
-                        println!("Var god skriv numeriskt argument!");
-                    }
-                } else {
-                    println!("Inget argument givet");
-                },
+            Some("eko") => match rd_line.next() {
                 Some(thing) => println!("{}", thing),
                 _ => println!("Inget argument givet"),
             },
 
-            Some("kulor") => match rd_line.next() {
-                Some(thing) =>
-                    println!("kulor till {}", thing),
-                _ =>
-                    println!("kulor till dig!"),
+            // NOTE: UNSAFE! CAN BREAK WHAT YOU'RE DOING! CAUTION!
+            Some("msr") => if let Some(reg) = rd_line.next() {
+                if let Ok(regnum) = u32::from_str(reg) {
+                    println!("Registret {} har informationen 0x{:x}",
+                             reg, unsafe {msr::read_msr(regnum)} );
+                } else {
+                    println!("Var god skriv numeriskt argument!");
+                }
+            } else {
+                println!("Inget argument givet");
+            },
+
+            Some("historik") =>
+                for line in &self.history {
+                    print!("{}", line);
+                },
+
+            Some("utse-kommandoprompt") => if let Some(new_prompt) = rd_line.next() {
+                self.prompt = String::from(new_prompt);
+                self.prompt.push_str(": ");
+            } else {
+                println!("Inget argument givet");
             },
 
             Some("utse-uttrycksmedel") => if let Some(new_lang) = rd_line.next() {
                 self.set_lang(new_lang);
             },
+
+            Some("rensa") => vga_buffer::clear_screen(),
 
             None => {},
             _ => println!("Tolkning av kommandot misslyckades."),
@@ -182,9 +208,19 @@ impl Shell {
     /// Parses arguments in english
     fn parse_line_en(&mut self, rd_line: &mut SplitWhitespace) {
         match rd_line.next() {
-            Some("print") => match rd_line.next() {
-                // NOTE: UNSAFE! CAN BREAK WHAT YOU'RE DOING! CAUTION!
-                Some("-msr") => if let Some(reg) = rd_line.next() {
+            Some("echo") => match rd_line.next() {
+                Some(thing) => println!("{}", thing),
+                _ => println!("No argument given!"),
+            },
+
+            Some("history") =>
+                for line in &self.history {
+                    print!("{}", line);
+                },
+
+            // NOTE: UNSAFE! CAN BREAK WHAT YOU'RE DOING! CAUTION!
+            Some("msr") => {
+                if let Some(reg) = rd_line.next() {
                     if let Ok(regnum) = u32::from_str(reg) {
                         println!("{} contains 0x{:x}",
                                  reg, unsafe {msr::read_msr(regnum)} );
@@ -193,20 +229,7 @@ impl Shell {
                     }
                 } else {
                     println!("No argument given");
-                },
-                Some("history") =>
-                    for line in &self.history {
-                        print!("{}", line);
-                    },
-                Some(thing) => println!("{}", thing),
-                _ => println!("No argument given!"),
-            },
-
-            Some("balls") => match rd_line.next() {
-                Some(thing) =>
-                    println!("Balls to {} too", thing),
-                _ =>
-                    println!("Balls to you too"),
+                }
             },
 
             Some("set-lang") => if let Some(new_lang) = rd_line.next() {
@@ -216,6 +239,8 @@ impl Shell {
             Some("set-prompt") => if let Some(new_prompt) = rd_line.next() {
                 self.prompt = String::from(new_prompt);
                 self.prompt.push_str(": ");
+            } else {
+                println!("No argument given");
             },
 
             Some("clear") => vga_buffer::clear_screen(),
