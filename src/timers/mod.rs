@@ -1,5 +1,4 @@
-//! This is a module to handle and set up timers. It also provides a
-//! very weak callback infrastructure to enable timer hooks.
+//! This is a module to handle and set up timers.
 
 /// The interrupt vector at which IRQ0 arrives from the PIT.
 const IRQ0_VEC : usize = 32;
