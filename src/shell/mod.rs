@@ -94,6 +94,8 @@ impl Shell {
             print!("{}", self.prompt);
 
             let mut line: String = String::from("");
+            let mut tmp_line: String = String::from("");
+            let mut tmp_cur_line: usize = self.cur_line;
 
             // Input loop
             let mut end_of_input: bool = false;
@@ -106,15 +108,57 @@ impl Shell {
                     for current in mut_input {
                         match current {
                             0x08 => { // Backspace
-                                vga_buffer::step_left();
-                                print!(" ");
-                                vga_buffer::step_left();
-                                line.pop();
+                                if !line.is_empty() {
+                                    vga_buffer::step_left();
+                                    print!(" ");
+                                    vga_buffer::step_left();
+                                    line.pop();
+                                }
+                            },
+                            0x82 => { // UP arrow
+                                if tmp_cur_line > 0 {
+                                    for _ in 0..line.len() {
+                                        vga_buffer::step_left();
+                                        print!(" ");
+                                        vga_buffer::step_left();
+                                    }
+
+                                    tmp_cur_line -= 1;
+
+                                    print!("{}", self.history[tmp_cur_line]);
+                                    line = self.history[tmp_cur_line].clone();
+                                }
+                            },
+                            0x83 => { // DOWN arrow
+                                if tmp_cur_line + 1 < self.cur_line {
+                                    for _ in 0..line.len() {
+                                        vga_buffer::step_left();
+                                        print!(" ");
+                                        vga_buffer::step_left();
+                                    }
+
+                                    tmp_cur_line += 1;
+
+                                    print!("{}", self.history[tmp_cur_line]);
+                                    line = self.history[tmp_cur_line].clone();
+
+                                } else if tmp_cur_line + 1 == self.cur_line {
+                                    for _ in 0..line.len() {
+                                        vga_buffer::step_left();
+                                        print!(" ");
+                                        vga_buffer::step_left();
+                                    }
+                                    tmp_cur_line += 1;
+
+                                    print!("{}", tmp_line);
+                                    line = tmp_line.clone();
+                                }
                             },
                             _ => {
                                 print!("{}", current as char);
 
                                 line.push(current as char);
+                                tmp_line.push(current as char);
 
                                 // This could be expanded to check for quotes, escape char, etc
                                 if current == b'\n' {
@@ -129,7 +173,10 @@ impl Shell {
                 }
             }
 
-            if line != "\n" { // Ignore empty lines
+            // Remove newline char
+            line.pop();
+
+            if !line.is_empty() { // Ignore empty lines
                 self.history.push(line.clone());
                 self.cur_line += 1;
             }
@@ -215,7 +262,7 @@ impl Shell {
 
             Some("history") =>
                 for line in &self.history {
-                    print!("{}", line);
+                    println!("{}", line);
                 },
 
             // NOTE: UNSAFE! CAN BREAK WHAT YOU'RE DOING! CAUTION!
