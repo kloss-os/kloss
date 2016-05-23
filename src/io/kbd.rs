@@ -61,6 +61,9 @@ enum Keycode {
 
 static mut shift: bool = false;
 
+
+/// Keyboard handler. It is _very_ depressing to resort to global variables, if a better solution
+/// exists, feel free to implement it!
 pub unsafe fn getkbd(arg: usize) {
     let flag: u8;
     let data: u8;
@@ -106,6 +109,15 @@ pub unsafe fn getkbd(arg: usize) {
 }
 
 
+/// Converts a given keycode to an ASCII character
+/// TODO: Implement Dvorak version
+/// Special characters have been encoded to characters out of the ASCII bound (i e using bit 7 or
+/// values > 127)
+///
+/// Currently included are:
+///
+/// + UP Released (pressed value is undefined): 0x82
+/// + DOWN Released (pressed value is undefined): 0x83
 fn data_to_ascii(data: u8) -> u8 {
     match data {
         data if data == Keycode::Q_PRESSED  as u8 => b'Q',
@@ -156,8 +168,8 @@ fn data_to_ascii(data: u8) -> u8 {
 
         //data if data == Keycode::LEFT_RELEASED  as u8 => 0x80,
         //data if data == Keycode::RIGHT_RELEASED as u8 => 0x81,
-        //data if data == Keycode::UP_RELEASED    as u8 => 0x82,
-        //data if data == Keycode::DOWN_RELEASED  as u8 => 0x83,
+        data if data == Keycode::UP_RELEASED    as u8 => 0x82,
+        data if data == Keycode::DOWN_RELEASED  as u8 => 0x83,
         _ => 0x00,
     }
 }
