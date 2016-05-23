@@ -3,10 +3,19 @@
 
 use core::intrinsics::{volatile_store};
 
+/// Offset to the Timer IRQ part of the APIC config table
 const APIC_LVT_TMR     : u32 = 0x320;
+
+/// Offset to the Timer Divider part of the APIC config table
 const APIC_TMRDIV      : u32 = 0x3E0;
+
+/// Offset to the Timer Count part of the APIC table
 const APIC_TMRINITCNT  : u32 = 0x380;
+
+/// Bitmask flag for periodic timers
 const TMR_PERIODIC     : u32 = 0x20000;
+
+/// Desired target interrupt vector
 const TARGET_IV        : u32 = 32;
 
 
