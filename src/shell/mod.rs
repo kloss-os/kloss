@@ -230,7 +230,7 @@ impl Shell {
 
             Some("historik") =>
                 for line in &self.history {
-                    print!("{}", line);
+                    println!("{}", line);
                 },
 
             Some("utse-kommandoprompt") => if let Some(new_prompt) = rd_line.next() {
