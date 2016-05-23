@@ -56,12 +56,16 @@ Källkod. Moduler har egna mappar, men följande filer är också värda att not
 
 ### libs
 - Bibliotek skrivna av projektet men utseparerade till egna moduler. Det långsiktiga målet är att flytta större delen av all kod hit.
+
 ### target
 - Här hamnar vissa binär- och biblioteksfiler. Allt i mappen är artefakter.
+
 #### target/doc
 - Här hamnar dokumentation (när den har byggts).
+
 ### build
 - Här hamnar slutgiltiga binärfiler och (mer viktigt) filen `os-x86_64.iso`, som är den startbara skivavbild som projektet genererar.
+
 ### tests
 Hjälpkod för tester (men inga faktiska testfiler).
 
