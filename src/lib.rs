@@ -50,7 +50,10 @@ mod irq;
 mod arch;
 
 mod msr;
+mod timers;
+
 mod pipe;
+
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
@@ -91,20 +94,29 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // kernel-remap and all other memory-related set-up
     memory::init(boot_info, sdt_loc);
 
-    println!("Setting up the IDT!");
+    println!("Memory initialisation completed!");
+
     unsafe{
         // Install IRQ
         irq::install();
-        // Enable global interrupts!
-        x86::irq::enable();
+
+        // Register the null interrupt handler for the spurious
+        // interrupt vector.
+        irq::idt::set_gate(255, irq::isr_null,
+                           irq::idt::SELECT_TARGET_PRIV_1,
+                           irq::DEFAULT_FLAGS);
     }
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
-    // ======================================================
-    // Test heap
-    // ======================================================
+    // Redirect spurious interrupts
+    unsafe {acpi::apic::redirect_spurious(sdt_loc.lapic_ctrl, 255)}
 
+    println!("I/O and interrupt subsystem installed!");
+
+    timers::init(sdt_loc.lapic_ctrl);
+
+    println!("Timer/scheduling system initialised!");
     use alloc::boxed::Box;
     use collections::String;
     // let heap_test = Box::new(42);
@@ -116,25 +128,26 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
 
     //let hello = String::from("Hello from heap!");
     //println!("{}",hello);
-    
+
     use pipe::Buffer;
-        
+
     let mut buffer = Buffer::new();
     buffer.write(42);
-    println!("{}", buffer.read());
-
-    
+    //println!("{}", buffer.read());
 
 
-    // ======================================================
-    // EOF Test heap
-    // ======================================================
+    println!("Global interrupts enabled!");
 
-    // Final print before infloop
-    println!("It did not crash!");
+    // Enable global interrupts!
+    unsafe {x86::irq::enable()};
 
     // Loop to infinity and beyond!
-    loop{}
+
+    println!("Going to sleep!");
+    timers::busy_sleep(100);
+    println!("Done sleeping!");
+
+    loop {}
 }
 
 
@@ -172,9 +185,9 @@ extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
     loop{}
 }
 
-// These functions are called from the ASM interrupt wrappers, and they
-// need to be here, unfortunately.
 
+/// This is a static entry point for the ASM interrupt wrappers to hook
+/// into. It has to be here, unfortunately.
 #[no_mangle]
 pub extern fn rust_interrupt_handler(intnr: usize) {
     irq::entry(intnr);
@@ -185,5 +198,3 @@ pub extern fn rust_exception_handler() {
     println!("Handled exception!");
     irq::entry(0);
 }
-
-

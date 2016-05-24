@@ -67,8 +67,7 @@ pub unsafe fn getkbd(arg: usize) {
 
     println!("Flag: {:x}, data: {:x}, {}", flag, data, data_to_char(data) );
 
-    let lapic_reg = (io::LAPIC_BASE | (io::LAPIC_EOI as usize)) as *mut usize;
-    volatile_store(lapic_reg, 0);
+    io::send_LAPIC_EOI()
 }
 
 

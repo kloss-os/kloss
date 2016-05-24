@@ -140,7 +140,7 @@ impl ::core::fmt::Write for Writer {
 /// *this* writer, which is universally spin-locked for mutual exclusion.
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
     column_position: 0,
-    color_code: ColorCode::new(Color::White, Color::Cyan),
+    color_code: ColorCode::new(Color::Red, Color::LightGray),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
 

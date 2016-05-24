@@ -33,7 +33,7 @@ pub fn install_io(lapic_addr: usize, ioapic_addr: usize) {
 
     // Disable 8259PIC
     disable_pic();
-    
+
     // Generate redirection table for I/O
     unsafe { gen_ioredtable(ioapic_addr as *mut u32); }
 
@@ -124,8 +124,8 @@ pub unsafe fn gen_ioredtable(ioapicaddr: *mut u32) {
     let res_kbd_hi = read_ioapic(ioapicaddr, KBD_IOWIN_HI);
     let res_kbd_lo = read_ioapic(ioapicaddr, KBD_IOWIN_LO);
 
-    println!("KBD INT HI: {:x}, KBD INT LO: {:x}",
-             res_kbd_hi, res_kbd_lo);
+    // println!("KBD INT HI: {:x}, KBD INT LO: {:x}",
+    //          res_kbd_hi, res_kbd_lo);
 }
 
 
@@ -217,4 +217,14 @@ pub fn disable_pic() {
         mask_pic_irq();
         remap_pic();
     }
+}
+
+/// Send the End-of-Interrupt (EOI) signal to the LAPIC.
+pub fn send_LAPIC_EOI() {
+
+    unsafe {
+        let lapic_reg = (LAPIC_BASE | (LAPIC_EOI as usize)) as *mut usize;
+        volatile_store(lapic_reg, 0);
+    }
+
 }
