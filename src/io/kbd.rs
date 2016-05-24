@@ -57,6 +57,10 @@ enum Keycode {
 
     UP_RELEASED = 0xC8,     DOWN_RELEASED = 0xD0,
     LEFT_RELEASED = 0xCB,   RIGHT_RELEASED = 0xCD,
+
+    AA_PRESSED = 0x1A,   AA_RELEASED = 0x9A,
+    AE_PRESSED = 0x28,   AE_RELEASED = 0xA8,
+    OE_PRESSED = 0x27,   OE_RELEASED = 0xA7,
 }
 
 static mut shift: bool = false;
@@ -89,8 +93,16 @@ pub unsafe fn getkbd(arg: usize) {
         let mut read_char = data_to_ascii(data);
         if read_char != 0x00 {
             // Set lower/uppercase
-            if !shift && 0x41 <= read_char && read_char <= 0x5A {
-                read_char += 0x20;
+            if !shift {
+                if 0x41 <= read_char && read_char <= 0x5A {
+                    read_char += 0x20;
+                } else if read_char == 0xC5 { // Å
+                    read_char = 0xE5;
+                } else if read_char == 0xC4 { // Ä
+                    read_char = 0xE4;
+                } else if read_char == 0xD6 { // Ö
+                    read_char = 0xF6;
+                }
             }
             // Write to buffer
             if !buf.is_full() {
@@ -145,6 +157,10 @@ fn data_to_ascii(data: u8) -> u8 {
         data if data == Keycode::B_PRESSED  as u8 => b'B',
         data if data == Keycode::N_PRESSED  as u8 => b'N',
         data if data == Keycode::M_PRESSED  as u8 => b'M',
+
+        data if data == Keycode::AA_PRESSED  as u8 => 0xC5,
+        data if data == Keycode::AE_PRESSED  as u8 => 0xC4,
+        data if data == Keycode::OE_PRESSED  as u8 => 0xD6,
 
         data if data == Keycode::ZERO_PRESSED   as u8 => b'0',
         data if data == Keycode::ONE_PRESSED    as u8 => b'1',

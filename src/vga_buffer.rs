@@ -83,6 +83,7 @@ impl Writer {
                     ascii_character: byte,
                     color_code: self.color_code,
                 };
+
                 self.column_position += 1;
             }
         }
@@ -142,8 +143,17 @@ impl Writer {
 /// set of bytes and returns Ok(()).
 impl ::core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> ::core::fmt::Result {
-        for byte in s.bytes() {
-          self.write_byte(byte)
+        for byte in s.chars() {
+          self.write_byte(
+            match byte {
+                'Å' => 0x8F, // Å
+                'å' => 0x86, // å
+                'Ä' => 0x8E, // Ä
+                'ä' => 0x84, // ä
+                'Ö' => 0x99, // Ö
+                'ö' => 0x94, // ö
+                ch => ch as u8,
+            } as u8)
         }
         Ok(())
     }

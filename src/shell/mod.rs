@@ -15,21 +15,24 @@
 //!
 //! Current accepted commands:
 //!
-//! + `echo _WORD_`
+//! + `echo WORD`
 //!     - Prints _WORD_
 //!     - `eko` in Swedish
-//! + `msr _REGISTER_`
+//! + `msr REGISTER`
 //!     - Prints _REGISTER_, provided it is an integer
 //!     - `msr` in Swedish
 //! + `history`
 //!     - Prints the previously entered commands
 //!     - `historik` in Swedish
-//! + `set-lang _LANG_`
-//!     - Sets language to Swedish (sv), English (en) respectively
-//!     - `utse-uttrycksmedel` in Swedish
-//! + `set-prompt _ARG_`
-//!     - Sets current prompt to _ARG_
-//!     - `utse-kommandoprompt` in Swedish
+//! + `set-lang LANG`
+//!     - Sets language given by _LANG_ to Swedish (sv), English (en) respectively
+//!     - `välj-språk` in Swedish
+//! + `set-name ARG`
+//!     - Sets current username to _ARG_
+//!     - `välj-namn` in Swedish
+//! + `set-host ARG`
+//!     - Sets current host to _ARG_
+//!     - `välj-värd` in Swedish
 //! + `clear`
 //!     - Clears screen
 //!     - `rensa` in Swedish
@@ -56,20 +59,19 @@ enum Lang {
 
 const DEFAULT_LANG: Lang = Lang::en;
 
-const en_prompt: &'static str = "ultra_user@BanjOS: ";
-const sv_prompt: &'static str = "ultra_anv@BanjOS: ";
-
 
 /// Struct for the Shell, this could allow multiple TTY:s if one would like
 pub struct Shell {
     /// Language currently set
     current_lang: Lang,
     /// The prompt (start of each new line)
-    prompt: String,
+    host: String,
     /// Vector containing previously entered lines
     history: Vec<String>,
     /// Index of current line
     cur_line: usize,
+    /// User name
+    user_name: String,
 }
 
 
@@ -77,12 +79,10 @@ impl Shell {
     /// Generates new shell according to default language value
     pub fn new() -> Shell {
         Shell { current_lang: DEFAULT_LANG,
-                prompt: String::from(match DEFAULT_LANG {
-                    Lang::en => en_prompt,
-                    Lang::sv => sv_prompt,
-                }),
+                host: String::from("BanjOS"),
                 history: Vec::new(),
                 cur_line: 0,
+                user_name: String::from("super_user"),
         }
     }
 
@@ -91,7 +91,7 @@ impl Shell {
 
         print!("\n");
         loop {
-            print!("{}", self.prompt);
+            print!("{}@{}: ", self.user_name, self.host);
 
             let mut line: String = String::from("");
             let mut tmp_line: String = String::from("");
@@ -117,7 +117,7 @@ impl Shell {
                             },
                             0x82 => { // UP arrow
                                 if tmp_cur_line > 0 {
-                                    for _ in 0..line.len() {
+                                    for _ in line.chars() {
                                         vga_buffer::step_left();
                                         print!(" ");
                                         vga_buffer::step_left();
@@ -131,7 +131,7 @@ impl Shell {
                             },
                             0x83 => { // DOWN arrow
                                 if tmp_cur_line + 1 < self.cur_line {
-                                    for _ in 0..line.len() {
+                                    for _ in line.chars() {
                                         vga_buffer::step_left();
                                         print!(" ");
                                         vga_buffer::step_left();
@@ -143,7 +143,7 @@ impl Shell {
                                     line = self.history[tmp_cur_line].clone();
 
                                 } else if tmp_cur_line + 1 == self.cur_line {
-                                    for _ in 0..line.len() {
+                                    for _ in line.chars() {
                                         vga_buffer::step_left();
                                         print!(" ");
                                         vga_buffer::step_left();
@@ -155,10 +155,19 @@ impl Shell {
                                 }
                             },
                             _ => {
-                                print!("{}", current as char);
+                                let cur_char = match current {
+                                    0xC5 => 'Å', // Å
+                                    0xE5 => 'å', // å
+                                    0xC4 => 'Ä', // Ä
+                                    0xE4 => 'ä', // ä
+                                    0xD6 => 'Ö', // Ö
+                                    0xF6 => 'ö', // ö
+                                    ch => ch as char,
+                                };
+                                print!("{}", cur_char as char);
 
-                                line.push(current as char);
-                                tmp_line.push(current as char);
+                                line.push(cur_char as char);
+                                tmp_line.push(cur_char as char);
 
                                 // This could be expanded to check for quotes, escape char, etc
                                 if current == b'\n' {
@@ -200,12 +209,6 @@ impl Shell {
                 "sv" => Lang::sv,
                 _ => DEFAULT_LANG,
         };
-
-        self.prompt = String::from(match self.current_lang {
-            Lang::en => en_prompt,
-            Lang::sv => sv_prompt,
-        });
-
     }
 
     /// Parses arguments in swedish
@@ -222,7 +225,7 @@ impl Shell {
                     println!("Registret {} har informationen 0x{:x}",
                              reg, unsafe {msr::read_msr(regnum)} );
                 } else {
-                    println!("Var god skriv numeriskt argument!");
+                    println!("Var vänlig skriv numeriskt argument!");
                 }
             } else {
                 println!("Inget argument givet");
@@ -233,18 +236,24 @@ impl Shell {
                     println!("{}", line);
                 },
 
-            Some("utse-kommandoprompt") => if let Some(new_prompt) = rd_line.next() {
-                self.prompt = String::from(new_prompt);
-                self.prompt.push_str(": ");
+            Some("välj-värd") => if let Some(new_host) = rd_line.next() {
+                self.host = String::from(new_host);
             } else {
                 println!("Inget argument givet");
             },
 
-            Some("utse-uttrycksmedel") => if let Some(new_lang) = rd_line.next() {
+            Some("välj-språk") => if let Some(new_lang) = rd_line.next() {
                 self.set_lang(new_lang);
             },
 
+            Some("välj-namn") => if let Some(new_name) = rd_line.next() {
+                self.user_name = String::from(new_name);
+            },
+
             Some("rensa") => vga_buffer::clear_screen(),
+
+            Some("avsluta") =>
+                println!("Jag kan inte låta dig göra det, {}", self.user_name),
 
             None => {},
             _ => println!("Tolkning av kommandot misslyckades."),
@@ -283,14 +292,20 @@ impl Shell {
                 self.set_lang(new_lang);
             },
 
-            Some("set-prompt") => if let Some(new_prompt) = rd_line.next() {
-                self.prompt = String::from(new_prompt);
-                self.prompt.push_str(": ");
+            Some("set-host") => if let Some(new_host) = rd_line.next() {
+                self.host = String::from(new_host);
             } else {
                 println!("No argument given");
             },
 
             Some("clear") => vga_buffer::clear_screen(),
+
+            Some("set-name") => if let Some(new_name) = rd_line.next() {
+                self.user_name = String::from(new_name);
+            },
+
+            Some("shutdown") =>
+                println!("I can't let you do that, {}", self.user_name),
 
             None => {},
             _ => println!("Unrecognized command"),

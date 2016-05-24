@@ -148,10 +148,10 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // Enable global interrupts!
     unsafe {x86::irq::enable()};
 
-    println!("Global interrupts enabled!");
-    println!("Going to sleep!");
-    timers::busy_sleep(100);
-    println!("Done sleeping!");
+//    println!("Global interrupts enabled!");
+//    println!("Going to sleep!");
+//    timers::busy_sleep(100);
+//    println!("Done sleeping!");
 
     unsafe {
         if let Some(ref mut buffer) = io::kbd_buffer {
