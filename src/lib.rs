@@ -54,6 +54,8 @@ mod timers;
 
 mod pipe;
 
+mod shell;
+
 /// This is the kernel main function! Control is passed after the ASM
 /// parts have finished.
 ///
@@ -94,8 +96,14 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     // kernel-remap and all other memory-related set-up
     memory::init(boot_info, sdt_loc);
 
-    println!("Memory initialisation completed!");
-
+//<<<<<<< HEAD
+//    io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
+//
+//    println!("Setting up the IDT!");
+//=======
+//    println!("Memory initialisation completed!");
+//
+//>>>>>>> master
     unsafe{
         // Install IRQ
         irq::install();
@@ -106,6 +114,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
                            irq::idt::SELECT_TARGET_PRIV_1,
                            irq::DEFAULT_FLAGS);
     }
+
 
     io::install_io(sdt_loc.lapic_ctrl, sdt_loc.ioapic_start);
 
@@ -136,16 +145,23 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     //println!("{}", buffer.read());
 
 
-    println!("Global interrupts enabled!");
-
     // Enable global interrupts!
     unsafe {x86::irq::enable()};
 
+//    println!("Global interrupts enabled!");
+//    println!("Going to sleep!");
+//    timers::busy_sleep(100);
+//    println!("Done sleeping!");
+
+    unsafe {
+        if let Some(ref mut buffer) = io::kbd_buffer {
+            let mut shell = shell::Shell::new();
+            shell.run(buffer);
+        }
+    }
+
     // Loop to infinity and beyond!
 
-    println!("Going to sleep!");
-    timers::busy_sleep(100);
-    println!("Done sleeping!");
 
     loop {}
 }
