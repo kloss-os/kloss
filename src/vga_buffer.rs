@@ -60,6 +60,7 @@ struct Buffer {
 pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
+    color_alt: ColorCode,
     buffer: Unique<Buffer>,
 }
 
@@ -82,9 +83,17 @@ impl Writer {
                     ascii_character: byte,
                     color_code: self.color_code,
                 };
+
                 self.column_position += 1;
             }
         }
+    }
+
+    /// Switches color scheme to alt in struct
+    fn switch_color(&mut self) {
+        let temp_color = self.color_code;
+        self.color_code = self.color_alt;
+        self.color_alt = temp_color;
     }
 
     /// Write an entire string to screen, possibly clipping it if it
@@ -95,6 +104,12 @@ impl Writer {
         }
     }
 
+
+    /// Moves column position one step left
+    pub fn move_left(&mut self) {
+        self.column_position -= 1;
+    }
+
     /// Internal helper function. Get a mutable reference to the
     /// buffer. That `unsafe` block is sort of worrying.
     fn buffer(&mut self) -> &mut Buffer {
@@ -103,6 +118,7 @@ impl Writer {
 
     /// Print a simple newline.
     fn new_line(&mut self) {
+        self.switch_color();
         for row in 0..(BUFFER_HEIGHT-1) {
             let buffer = self.buffer();
             buffer.chars[row] = buffer.chars[row + 1]
@@ -127,8 +143,17 @@ impl Writer {
 /// set of bytes and returns Ok(()).
 impl ::core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> ::core::fmt::Result {
-        for byte in s.bytes() {
-          self.write_byte(byte)
+        for byte in s.chars() {
+          self.write_byte(
+            match byte {
+                'Å' => 0x8F, // Å
+                'å' => 0x86, // å
+                'Ä' => 0x8E, // Ä
+                'ä' => 0x84, // ä
+                'Ö' => 0x99, // Ö
+                'ö' => 0x94, // ö
+                ch => ch as u8,
+            } as u8)
         }
         Ok(())
     }
@@ -140,7 +165,8 @@ impl ::core::fmt::Write for Writer {
 /// *this* writer, which is universally spin-locked for mutual exclusion.
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
     column_position: 0,
-    color_code: ColorCode::new(Color::Red, Color::LightGray),
+    color_code: ColorCode::new(Color::LightBlue, Color::White),
+    color_alt: ColorCode::new(Color::Cyan, Color::White),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
 
@@ -163,4 +189,9 @@ pub fn clear_screen() {
     for _ in 0..BUFFER_HEIGHT {
         println!("");
     }
+}
+
+/// Helper function: Moves the current slice one step left
+pub fn step_left() {
+    WRITER.lock().move_left();
 }

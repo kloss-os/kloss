@@ -6,10 +6,17 @@
 
 
 use core::intrinsics::{volatile_load, volatile_store};
+use alloc::boxed::Box;
 use irq;
 
 
 pub mod kbd;
+
+// TODO: Put the following into a scheduler
+use pipe::Buffer;
+pub static mut kbd_buffer: Option<Buffer> = None;
+pub static mut kbd_buffer_empty: bool = true;
+
 
 static mut LAPIC_BASE: usize = 0;
 
@@ -37,6 +44,7 @@ pub fn install_io(lapic_addr: usize, ioapic_addr: usize) {
     // Generate redirection table for I/O
     unsafe { gen_ioredtable(ioapic_addr as *mut u32); }
 
+    unsafe { kbd_buffer = Some(*Buffer::new()); }
 
     // Set handlers
     let kbdh = kbd::getkbd;

@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 pub type Content = u8;
 
 /// BUFFER_SIZE is set to a low number
-const BUFFER_SIZE: usize = 5;
+const BUFFER_SIZE: usize = 24;
 /// START_POINTER is kind of a test thing since usize would not work as intended
 const START_POINT: usize = 0;
 
@@ -76,7 +76,7 @@ impl Buffer{
         self.buf[self.wp] = insert;
         self.step_wp(); 
     }
-    
+
     // Check if empty, read Content from current reader pointer
     // then steps once
     pub fn read(&mut self) -> Content {
@@ -85,7 +85,24 @@ impl Buffer{
         self.step_rp();
         return content;
     }
+
+//    pub fn unread(&mut self) -> bool {
+//        self.rp < self.wp
+//    }
 }
+
+/// Implements iterator for buffer, lets you process all unread data.
+impl Iterator for Buffer {
+    type Item = Content;
+    fn next(&mut self) -> Option<Content> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.read())
+        }
+    }
+}
+
 
 #[test]
 /// Test pointers set to zero
