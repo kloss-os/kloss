@@ -8,6 +8,10 @@
 /meta/**/*.blg
 /meta/**/*.lof
 /meta/**/*.toc
+/meta/**/*.glo
+/meta/**/*.glg
+/meta/**/*.gls
+/meta/**/*.ist
 
 /build/*
 /Cargo.lock
