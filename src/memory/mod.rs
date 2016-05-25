@@ -39,12 +39,12 @@ pub fn init(boot_info: &BootInformation, sdt_loc: &mut SDT_Loc) {
         .filter(|s| s.is_allocated()).map(|s| s.addr + s.size).max()
         .unwrap();
 
-    println!("Kernel start: 0x{:#x}, kernel end: 0x{:#x}",
-             kernel_start,
-             kernel_end);
-    println!("Multiboot start: 0x{:#x}, multiboot end: 0x{:#x}",
-             boot_info.start_address(),
-             boot_info.end_address());
+    // println!("Kernel start: 0x{:#x}, kernel end: 0x{:#x}",
+    //          kernel_start,
+    //          kernel_end);
+    // println!("Multiboot start: 0x{:#x}, multiboot end: 0x{:#x}",
+    //          boot_info.start_address(),
+    //          boot_info.end_address());
 
     // Set up a frame allocator.
     let mut frame_allocator = AreaFrameAllocator::new(
@@ -65,12 +65,12 @@ pub fn init(boot_info: &BootInformation, sdt_loc: &mut SDT_Loc) {
     // ===============================================================
     // Map kernel heap using `active_table`
     // ===============================================================
-    
+
     #[cfg(not(test))]
     {
         use self::paging::Page;
         use hole_list_allocator::{HEAP_START, HEAP_SIZE};
-        
+
         // Get start- and end page of heap
         let heap_start_page = Page::containing_address(HEAP_START);
         let heap_end_page = Page::containing_address(HEAP_START + HEAP_SIZE-1);
@@ -94,7 +94,7 @@ impl Frame {
     fn containing_address(address: usize) -> Frame {
         Frame{ number: address / PAGE_SIZE }
     }
-    
+
     /// Returns Start address
     fn start_address(&self) -> PhysicalAddress {
         self.number * PAGE_SIZE
@@ -105,7 +105,7 @@ impl Frame {
         Frame { number: self.number }
     }
 
-    // To map a section we need to iterate over all sections of the frame. 
+    // To map a section we need to iterate over all sections of the frame.
     fn range_inclusive(start: Frame, end: Frame) -> FrameIter {
         FrameIter {
             start: start,

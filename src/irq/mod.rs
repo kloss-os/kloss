@@ -25,13 +25,15 @@
 
 
 /// Default flags for all system trap gates.
-static DEFAULT_FLAGS: u8 = self::idt::FLAG_TYPE_TRAP_GATE
+pub static DEFAULT_FLAGS: u8 = self::idt::FLAG_TYPE_TRAP_GATE
     | self::idt::FLAG_DPL_KERNEL_MODE | self::idt::FLAG_GATE_ENABLED;
 
 // Modules and re-exports
 pub mod idt;
 
 mod asm_wrappers;
+
+pub use self::asm_wrappers::{null_interrupt_handler as isr_null};
 
 use self::asm_wrappers::*;
 
