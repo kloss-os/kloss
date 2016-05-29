@@ -2,7 +2,6 @@
 /meta/**/*.aux
 /meta/**/*.fdb_latexmk
 /meta/**/*.log
-/meta/**/*.pdf
 /meta/**/*.fls
 /meta/**/*.bbl
 /meta/**/*.blg
@@ -24,3 +23,13 @@
 rust-os-gdb
 /libcore/
 /rustc-nightly-src.tar.gz
+/meta/feedback/projektförslag_grupp_6_peer_review_av_grupp_1.pdf
+/meta/feedback/projektförslag_grupp_7_peer_review_av_grupp_1.pdf
+/meta/projektförslag/proposal.pdf
+/meta/report/report.eng-sve-glg
+/meta/report/report.eng-sve-glo
+/meta/report/report.eng-sve-gls
+/meta/report/report.pdf
+/meta/report/report.sve-eng-glg
+/meta/report/report.sve-eng-glo
+/meta/report/report.sve-eng-gls
