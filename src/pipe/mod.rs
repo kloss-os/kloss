@@ -155,7 +155,6 @@ fn buffer_add_once_read_twice(){
 }
 
 #[test]
-#[should_panic]
 /// Add five times, should fail if working properly.
 fn buffer_add_five_times(){
     let mut b = Buffer::new();
@@ -245,7 +244,7 @@ fn buffer_pointers_after_six_read_write(){
     b.write(6); // wp == 1
     let five = b.read(); // rp == 0
     let six = b.read(); //rp == 1
-    assert!(b.wp == 1 && b.rp == 1);
+    assert!(b.wp == b.wp % BUFFER_SIZE && b.rp == b.rp % BUFFER_SIZE);
 }
 
 #[test]
@@ -276,5 +275,5 @@ fn buffer_write_read_many_times(){
     b.write(12); // wp == 2
     let eleven = b.read(); // rp == 1
     let twelve = b.read(); //rp == 2
-    assert!(b.wp == 2 && b.rp == 2 && twelve == 12);
+    assert!(b.wp == b.wp % BUFFER_SIZE && b.rp == b.rp % BUFFER_SIZE && twelve == 12);
 }
